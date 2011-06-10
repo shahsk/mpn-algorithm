@@ -9,6 +9,7 @@
 #include "Environment.h"
 #include "src/specialfunctions.h"
 #include <cmath>
+#include <iostream>
 
 double noExtraCost(Environment & e,double * state){return 0.;}
 
@@ -46,12 +47,17 @@ void samplePath(Environment & e, MPNParams & params,double** controlPath, double
 	double currentPolyTime = params.currentTime/params.predictionHorizon;
 	double polyDt = dt/params.predictionHorizon;
 
+
 	for(int i(0); i<steps; i++){
+
 		currentGrad = controlPath[i];
 		e.negatedGradient(current,currentGrad);//store nominal gradient
+		//std::cout << "Current: " << current[0] << "," << current[1] << std::endl;
+		//std::cout << "CurrentGrad: " << currentGrad[0] << "," << currentGrad[1] << std::endl;
 		currentPolyTime += polyDt;
 		if(i != 0){//perturb the angle of the negated gradient, except for the first step
 			angPerturb = anglePerturb(params,currentGrad,currentPolyTime);
+			//std::cout << "angPerturb: " << angPerturb << std::endl;
 			tmpCos = cos(angPerturb);
 			tmpSin = sin(angPerturb);
 
@@ -59,8 +65,12 @@ void samplePath(Environment & e, MPNParams & params,double** controlPath, double
 			currentGrad[0] = currentGrad[0]*tmpCos - currentGrad[1]*tmpSin;
 			currentGrad[1] = currentGrad[1]*tmpCos + currentGrad[0]*tmpSin;
 		}
-		current[0] = current[0] + currentGrad[0]*dt;
-		current[1] = current[1] + currentGrad[1]*dt;
+		path[i][0] = current[0] + currentGrad[0]*dt;
+		path[i][1] = current[1] + currentGrad[1]*dt;
+
+		current = path[i];
+
+		//std::cout << current[0] << "," << current[1] << std::endl;
 	}
 }
 
@@ -71,7 +81,7 @@ double anglePerturb(MPNParams & params, double * gradient,double polytime){
 	}
 
 	legendreSum*=(M_PI/2.);
-	return atan2(gradient[0]+legendreSum,gradient[1]+legendreSum);
+	return atan2(gradient[1]+legendreSum,gradient[0]+legendreSum);
 }
 
 //Size is the index of the path to use, usually the number of steps
@@ -81,12 +91,14 @@ double terminalCost(Environment & e,double ** path,int size){
 
 //Size should be the actual size of path and controlPath
 double incrementalCost(Environment & e, MPNParams & params,double ** path, double ** controlPath, double dt, int size, double(*extraCost)(Environment &,double *)){
+
 	//compute the value of the cost function at every point
 	double costFunction[size];
 	for(int i(0); i<size; i++){
 		costFunction[i] = params.costWeights[0]*gamma(path[i],e.goal) +
 				params.costWeights[1]*gamma(controlPath[i]) + params.costWeights[2]*extraCost(e,path[i]);
 	}
+
 	//do a cumulative integration of the cost function (wrt time) using the trapezoidal method
 	double cost = costFunction[0] + costFunction[size-1];
 	for(int i(1); i<size-1; i++){
@@ -97,10 +109,13 @@ double incrementalCost(Environment & e, MPNParams & params,double ** path, doubl
 }
 
 
-int generateBestPath(Environment & e, MPNParams & params, double ** bestPath,double * start, double dt){
+int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,double * start, double dt){
+
 	//ln(a) = log(a)/log(e) -> ln(a)/ln(b) = log(a)/log(b)
 	double nSamples = log(1/(1-params.confidence))/log(1/(1-params.level));
+	std::cout << nSamples << std::endl;
 	int steps = ceil(static_cast<double>(params.predictionHorizon - params.currentTime)/dt);
+	std::cout << steps << std::endl;
 	double startCost = e.potentialField(start);
 
 	double ** nominal = allocatePoints(steps);
@@ -110,14 +125,15 @@ int generateBestPath(Environment & e, MPNParams & params, double ** bestPath,dou
 
 	//initialize with nominal values
 	double ** optimalPath = allocatePoints(steps);
-	for(int i(0); i<steps; i++){
-		optimalPath[i][0] = nominal[i][0];
-		optimalPath[i][1] = nominal[i][1];
-	}
+	optimalPath = nominal;
 
-	double optimalCost = terminalCost(e,nominal,steps) +
-			incrementalCost(e,params,nominal,nominalControl,dt,steps);
-			//incrementalCost(e,params,nominal,nominalControl,dt,steps,noExtraCost);
+	double incrCost = incrementalCost(e,params,nominal,nominalControl,dt,steps);
+	double termCost = terminalCost(e,nominal,steps);
+
+	double optimalCost = incrCost + termCost;
+	//double optimalCost = terminalCost(e,nominal,steps) + incrementalCost(e,params,nominal,nominalControl,dt,steps);
+
+
 	double optimalParams[params.nLegendrePolys];
 	for(unsigned int i(0); i<params.nLegendrePolys; i++){optimalParams[i] = params.controlParameters[i];}
 
@@ -127,6 +143,7 @@ int generateBestPath(Environment & e, MPNParams & params, double ** bestPath,dou
 
 	int acceptedSoFar = 1;
 	do{
+
 		//generate control inputs on +/- 1/(number of inputs)
 		for(unsigned int i(0); i<params.nLegendrePolys; i++){
 			params.controlParameters[i] = (static_cast<double>(rand() - rand())/RAND_MAX)/static_cast<double>(params.nLegendrePolys);
@@ -157,9 +174,50 @@ int generateBestPath(Environment & e, MPNParams & params, double ** bestPath,dou
 	for(unsigned int i(0); i<params.nLegendrePolys; i++){
 		params.controlParameters[i] = optimalParams[i];
 	}
+
+	cleanupPoints(nominal,steps);
+	cleanupPoints(nominalControl,steps);
+	cleanupPoints(nominalControl,steps);
+	cleanupPoints(currentPath,steps);
+	cleanupPoints(currentControlPath,steps);
+	//optimalPath is the answer, it doens't get deleted
+
 	return steps;
 }
 
 int main(){
-	return 0;
+	double goal[2] = {.5,.5};
+	Environment e(goal,1.3,1.0);
+
+	//Obstacle setup
+	double obPos1[2] = {.1,.1};
+	double obPos2[2] = {.1,.3};
+	e.obstacles.push_back(Obstacle(obPos1,.2));
+	e.obstacles.push_back(Obstacle(obPos2,.2));
+
+	MPNParams params;
+	double controlParams[5] = {0,0,0,0,0};
+	params.controlParameters = controlParams;
+	params.nLegendrePolys = 5;
+	params.currentTime = 0.0;
+	params.predictionHorizon = 1.0;
+	params.confidence = .05;
+	params.level = .05;
+
+	double start[2] = {.4,.3};
+	int steps = 100;
+	//double ** controlPath = allocatePoints(steps);
+	double ** path; //= allocatePoints(steps);
+	double dt = .01;
+
+	std::cout << path << std::endl;
+	int s = generateBestPath(e, params, path, start, dt);
+	std::cout << path << std::endl;
+
+	std::cout << s << std::endl;
+	for(int i(0); i<s; i++){
+		std::cout << path[s][0] << "," << path[s][1] << std::endl;
+	}
+	//samplePath(e,params,controlPath,path,start,dt,steps);
+
 }

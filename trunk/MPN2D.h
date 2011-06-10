@@ -52,6 +52,6 @@ double incrementalCost(Environment & e, MPNParams & params,double ** path, doubl
  * bestPath will point to a newly allocated best path
  * returns the number of steps in the path
  * */
-int generateBestPath(Environment & e, MPNParams & params, double ** bestPath, double * start, double dt);
+int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath, double * start, double dt);
 
 #endif /* MPN2D_H_ */
