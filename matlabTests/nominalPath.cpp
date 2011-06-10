@@ -8,7 +8,7 @@
   To customize the environment, see setupEnv.cpp
 
   Input arguments: [x,y] start, [x,y] goal, radius, precision(dt), steps
-  Outpus arguments: row vector of x values, row vector of y values
+  Output arguments: row vector of x values, row vector of y values
 
   Example usage in matlab:
   >>> [x,y] = nominalPath([.1,.5],[.5,.5],1,.01,100);

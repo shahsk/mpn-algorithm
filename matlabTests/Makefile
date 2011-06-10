@@ -1,7 +1,10 @@
-all: nominalPath.mexglx potentialField.mexglx
+all: nominalPath.mexglx potentialField.mexglx samplePath.mexglx
 
 clean:
 	rm *.o *.mexglx
+
+samplePath.mexglx: setupEnv.o samplePath.cpp
+	mex samplePath.cpp setupEnv.o ../Debug/*.o ../Debug/src/*.o -I../
 
 nominalPath.mexglx: setupEnv.o nominalPath.cpp
 	mex nominalPath.cpp setupEnv.o ../Debug/*.o ../Debug/src/*.o -I../
