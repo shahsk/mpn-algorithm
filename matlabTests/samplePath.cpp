@@ -11,18 +11,22 @@
 
   Input arguments: [x,y] start, [x,y] goal, control parameters (vector same size
   as n_legendre), current time, prediction horizon, radius, precision(dt), steps
-  Output arguments: row vector of x values, row vector of y values
+  Output arguments: row vector of x values, row vector of y values (optional 
+  row vector of dx values, row vector of dy values)
 
   Example usage in matlab:
   >>> [x,y] = samplePath([.6,.4],[.5,.5],zeros(1,5),0.,1.,1.,.01,100);
   >>> plot(x,y)
+  Example 2:
+  >>> [x,y,dx,dy] = samplePath([.6,.4],[.5,.5],zeros(1,5),0.,1.,1.,.01,100);
+  >>> plot(dx,dy)
 
 */
 void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   //Check for correct function syntax
   if(nrhs != 8)
     mexErrMsgTxt("Incorrect number of input arguments");
-  if(nlhs != 2)
+  if(!(nlhs == 2 || nlhs == 4))
     mexErrMsgTxt("Incorrect number of output arguments");
 
   //Get start position and check for correct dimensions
@@ -60,6 +64,10 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   //Allocate space for the answer
   plhs[0] = mxCreateDoubleMatrix(1,steps,mxREAL);
   plhs[1] = mxCreateDoubleMatrix(1,steps,mxREAL);
+  if(nlhs == 4){
+    plhs[2] = mxCreateDoubleMatrix(1,steps,mxREAL);
+    plhs[3] = mxCreateDoubleMatrix(1,steps,mxREAL);
+  }
   
   //Calculate a sample path
   double ** path = allocatePoints(steps);
@@ -70,6 +78,10 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   for(int i(0); i<steps; i++){
     mxGetPr(plhs[0])[i] = path[i][0];
     mxGetPr(plhs[1])[i] = path[i][1];
+    if(nlhs == 4){
+      mxGetPr(plhs[2])[i] = controlPath[i][0];
+      mxGetPr(plhs[3])[i] = controlPath[i][1];      
+    }
   }
 
   cleanupPoints(path,steps);
