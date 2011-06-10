@@ -1,9 +1,13 @@
-#TODO: learn how to do this the right way
-testDerivMat.mexglx: testDerivMat.cpp setupEnv.o
-	mex testDerivMat.cpp setupEnv.o ../Debug/*.o ../Debug/src/*.o -I../
-testPotMat.mexglx: testPotMat.cpp setupEnv.o
-	mex testPotMat.cpp setupEnv.o ../Debug/*.o ../Debug/src/*.o -I../
-testPathMat.mexglx: testPathMat.cpp setupEnv.o
-	mex testPathMat.cpp setupEnv.o ../Debug/*.o ../Debug/src/*.o -I../
+all: nominalPath.mexglx potentialField.mexglx
+
+clean:
+	rm *.o *.mexglx
+
+nominalPath.mexglx: setupEnv.o nominalPath.cpp
+	mex nominalPath.cpp setupEnv.o ../Debug/*.o ../Debug/src/*.o -I../
+
+potentialField.mexglx: setupEnv.o potentialField.cpp
+	mex potentialField.cpp setupEnv.o ../Debug/*.o ../Debug/src/*.o -I../
+
 setupEnv.o: setupEnv.cpp
-	g++ setupEnv.cpp 
+	g++ setupEnv.cpp -I../ -c
