@@ -8,7 +8,7 @@
 
   Input arguments: matrix of x values, matrix of y values, 
                    [x,y] goal position, radius
-  Outpus arguments: matrix of z values for each [x,y] point
+  Output arguments: matrix of z values for each [x,y] point
 
   Example usage in matlab:
   >>> [x,y] = meshgrid(0:.01:1,0:.01:1);
