@@ -86,7 +86,8 @@ double anglePerturb(MPNParams & params, double * gradient,double polytime){
 
 //Size is the index of the path to use, usually the number of steps
 double terminalCost(Environment & e,double ** path,int size){
-	return e.potentialField(path[size]);
+	//std::cout << "terminalIndex: " << path[size-1][0] << "," << path[size-1][1];
+	return e.potentialField(path[size-1]);
 }
 
 //Size should be the actual size of path and controlPath
@@ -112,10 +113,11 @@ double incrementalCost(Environment & e, MPNParams & params,double ** path, doubl
 int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,double * start, double dt){
 
 	//ln(a) = log(a)/log(e) -> ln(a)/ln(b) = log(a)/log(b)
-	double nSamples = log(1/(1-params.confidence))/log(1/(1-params.level));
-	std::cout << nSamples << std::endl;
+	double nSamples = log(1/(params.confidence))/log(1/(1-params.level));
+	std::cout << "samples: " << nSamples << std::endl;
 	int steps = ceil(static_cast<double>(params.predictionHorizon - params.currentTime)/dt);
-	std::cout << steps << std::endl;
+	int controlHorizonIndex = ceil(static_cast<double>(params.controlHorizon + params.currentTime)/dt);
+
 	double startCost = e.potentialField(start);
 
 	double ** nominal = allocatePoints(steps);
@@ -125,7 +127,10 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 
 	//initialize with nominal values
 	double ** optimalPath = allocatePoints(steps);
-	optimalPath = nominal;
+	for(int i(0); i<steps; i++){
+		optimalPath[i][0] = nominal[i][0];
+		optimalPath[i][1] = nominal[i][1];
+	}
 
 	double incrCost = incrementalCost(e,params,nominal,nominalControl,dt,steps);
 	double termCost = terminalCost(e,nominal,steps);
@@ -137,7 +142,7 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 	double optimalParams[params.nLegendrePolys];
 	for(unsigned int i(0); i<params.nLegendrePolys; i++){optimalParams[i] = params.controlParameters[i];}
 
-	double currentCost,currentTerminal;
+	double currentCost,currentTerminal,currentControlHorizonCost;
 	double ** currentPath = allocatePoints(steps);
 	double ** currentControlPath = allocatePoints(steps);
 
@@ -150,18 +155,21 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 		}
 
 		samplePath(e,params,currentControlPath,currentPath,start,dt,steps);
-		currentTerminal = terminalCost(e,currentPath,steps);
+		currentControlHorizonCost = terminalCost(e,currentPath,controlHorizonIndex);
 		//If we made progress toward the goal, count this path
-		if(currentTerminal < startCost){
+		if(currentControlHorizonCost < startCost){
+			currentTerminal = terminalCost(e,currentPath,steps);
 			currentCost = currentTerminal + incrementalCost(e,params,currentPath,currentControlPath,dt,steps);
 			acceptedSoFar++;
 			//If we found a better path, save it
 			if(currentCost < optimalCost){
 				optimalCost = currentCost;
+				//Copy values into optimalPath
 				for(int i(0); i<steps; i++){
 					optimalPath[i][0] = currentPath[i][0];
 					optimalPath[i][1] = currentPath[i][1];
 				}
+				//Copy parameters into optimalParams
 				for(unsigned int i(0); i<params.nLegendrePolys; i++){
 					optimalParams[i] = params.controlParameters[i];
 				}
@@ -176,11 +184,9 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 	}
 
 	cleanupPoints(nominal,steps);
-	cleanupPoints(nominalControl,steps);
-	cleanupPoints(nominalControl,steps);
 	cleanupPoints(currentPath,steps);
+	cleanupPoints(nominalControl,steps);
 	cleanupPoints(currentControlPath,steps);
-	//optimalPath is the answer, it doens't get deleted
 
 	return steps;
 }
@@ -201,6 +207,7 @@ int main(){
 	params.nLegendrePolys = 5;
 	params.currentTime = 0.0;
 	params.predictionHorizon = 1.0;
+	params.controlHorizon = .25;
 	params.confidence = .05;
 	params.level = .05;
 
@@ -210,14 +217,13 @@ int main(){
 	double ** path; //= allocatePoints(steps);
 	double dt = .01;
 
-	std::cout << path << std::endl;
 	int s = generateBestPath(e, params, path, start, dt);
-	std::cout << path << std::endl;
 
-	std::cout << s << std::endl;
+	/*
 	for(int i(0); i<s; i++){
-		std::cout << path[s][0] << "," << path[s][1] << std::endl;
+		std::cout << path[i][0] << "," << path[i][1] << std::endl;
 	}
+	*/
 	//samplePath(e,params,controlPath,path,start,dt,steps);
 
 }
