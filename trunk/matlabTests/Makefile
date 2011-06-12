@@ -1,3 +1,5 @@
+
+
 all: nominalPath.mexglx potentialField.mexglx samplePath.mexglx
 
 clean:
@@ -14,3 +16,6 @@ potentialField.mexglx: setupEnv.o potentialField.cpp
 
 setupEnv.o: setupEnv.cpp
 	g++ setupEnv.cpp -I../ -c
+
+config.o: config.cpp
+	g++ config.cpp -I../ -c

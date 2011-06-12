@@ -114,7 +114,7 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 
 	//ln(a) = log(a)/log(e) -> ln(a)/ln(b) = log(a)/log(b)
 	double nSamples = log(1/(params.confidence))/log(1/(1-params.level));
-	std::cout << "samples: " << nSamples << std::endl;
+	//std::cout << "samples: " << nSamples << std::endl;
 	int steps = ceil(static_cast<double>(params.predictionHorizon - params.currentTime)/dt);
 	int controlHorizonIndex = ceil(static_cast<double>(params.controlHorizon + params.currentTime)/dt);
 
@@ -191,6 +191,7 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 	return steps;
 }
 
+/*
 int main(){
 	double goal[2] = {.5,.5};
 	Environment e(goal,1.3,1.0);
@@ -219,11 +220,11 @@ int main(){
 
 	int s = generateBestPath(e, params, path, start, dt);
 
-	/*
+
 	for(int i(0); i<s; i++){
 		std::cout << path[i][0] << "," << path[i][1] << std::endl;
 	}
-	*/
+
 	//samplePath(e,params,controlPath,path,start,dt,steps);
 
-}
+}*/
