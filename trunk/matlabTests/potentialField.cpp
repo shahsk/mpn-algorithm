@@ -1,23 +1,24 @@
 #include "mex.h"
-#include "setupEnv.h"
+#include "configure.h"
 #include "Environment.h"
+
 
 /*
   Go-between from matlab to environment.potentialField for visualization
   To customize the environment, see setupEnv.cpp
 
-  Input arguments: matrix of x values, matrix of y values, 
-                   [x,y] goal position, radius
+  Input arguments: matrix of x values, matrix of y values, (optional filename)
   Output arguments: matrix of z values for each [x,y] point
 
   Example usage in matlab:
-  >>> [x,y] = meshgrid(0:.01:1,0:.01:1);
-  >>> z = potentialField(x,y,[.5,.5],1);
-  >>> surf(x,y,z)
+  [xa,ya] = meshgrid(0:.01:1,0:.01:1);
+  z = potentialField(xa,ya,'default.cfg');
+  surf(xa,ya,z)
+
 */
 void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   //Check for correct function syntax
-  if(nrhs != 4)
+  if(!(nrhs == 2 || nrhs == 3))
     mexErrMsgTxt("Incorrect number of input arguments");
   if(nlhs != 1)
     mexErrMsgTxt("Incorrect number of output arguments");
@@ -29,16 +30,18 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   if(rows != mxGetM(prhs[1]) || cols != mxGetN(prhs[1]) )
     mexErrMsgTxt("X and Y matrix dimensions must agree");
 
-  //Get goal position and check for correct dimensions
-  if(mxGetM(prhs[2]) != 1 || mxGetN(prhs[2]) != 2)
-    mexErrMsgTxt("Goal position must be in [x,y] form");
-  double goal[2] = {mxGetPr(prhs[2])[0],mxGetPr(prhs[2])[1]};
-  
-  //Get radius
-  double radius = *mxGetPr(prhs[3]);
-
   //Initialize environment
-  Environment e = *setupEnv(goal,radius);
+  Environment * e;
+  MPNParams * mp;
+  if(nrhs == 4){
+    char filename[256];
+    mxGetString(prhs[2],filename,mxGetN(prhs[2])+1);
+    mexPrintf(filename);
+    configure(filename,e,mp);
+  }
+  else{
+    configure(e,mp);
+  }
 
   //Allocate space for the answer
   plhs[0] = mxCreateDoubleMatrix(rows,cols,mxREAL);
@@ -52,7 +55,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
       index = r + rows*c;
       tmpPoint[0] = mxGetPr(prhs[0])[index];
       tmpPoint[1] = mxGetPr(prhs[1])[index];
-      mxGetPr(plhs[0])[index] = e.potentialField(tmpPoint);
+      mxGetPr(plhs[0])[index] = e->potentialField(tmpPoint);
     }
   }
 }
