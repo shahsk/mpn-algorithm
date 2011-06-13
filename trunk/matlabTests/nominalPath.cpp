@@ -6,7 +6,6 @@
 
 /*
   Go-between from matlab to MPN2D::nominalPath for visualization
-  To customize the environment, see setupEnv.cpp
 
   Input arguments: [x,y] start, precision(dt), steps, (optional filename)
   Output arguments: row vector of x values, row vector of y values (optional 

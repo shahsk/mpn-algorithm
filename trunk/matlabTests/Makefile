@@ -1,4 +1,4 @@
-all: configure.o nominalPath potentialField
+all: configure.o nominalPath potentialField bestPath
 
 nominalPath: configure.o
 	matlab -nojvm -r "mex nominalPath.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
@@ -8,6 +8,10 @@ potentialField: configure.o
 
 samplePath: configure.o
 	matlab -nojvm -r "mex samplePath.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
+
+bestPath: configure.o
+	matlab -nojvm -r "mex bestPath.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
+
 
 #test: 
 #	g++ test.cpp *.o ../*.o ../alglib/*.o -I../ -lconfig++

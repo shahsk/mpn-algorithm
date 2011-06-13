@@ -5,7 +5,6 @@
 
 /*
   Go-between from matlab to environment.potentialField for visualization
-  To customize the environment, see setupEnv.cpp
 
   Input arguments: matrix of x values, matrix of y values, (optional filename)
   Output arguments: matrix of z values for each [x,y] point
