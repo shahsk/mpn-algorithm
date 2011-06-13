@@ -1,21 +1,22 @@
+all: configure.o nominalPath potentialField
 
+nominalPath: configure.o
+	matlab -nojvm -r "mex nominalPath.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
 
-all: nominalPath.mexglx potentialField.mexglx samplePath.mexglx
+potentialField: configure.o
+	matlab -nojvm -r "mex potentialField.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
+
+samplePath: configure.o
+	matlab -nojvm -r "mex samplePath.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
+
+#test: 
+#	g++ test.cpp *.o ../*.o ../alglib/*.o -I../ -lconfig++
+
+#setupEnv.o: setupEnv.cpp
+#	g++ setupEnv.cpp -I../ -c
+
+configure.o: configure.cpp
+	g++ configure.cpp -I../ -c
 
 clean:
-	rm *.o *.mexglx
-
-samplePath.mexglx: setupEnv.o samplePath.cpp
-	mex samplePath.cpp setupEnv.o ../Debug/*.o ../Debug/src/*.o -I../
-
-nominalPath.mexglx: setupEnv.o nominalPath.cpp
-	mex nominalPath.cpp setupEnv.o ../Debug/*.o ../Debug/src/*.o -I../
-
-potentialField.mexglx: setupEnv.o potentialField.cpp
-	mex potentialField.cpp setupEnv.o ../Debug/*.o ../Debug/src/*.o -I../
-
-setupEnv.o: setupEnv.cpp
-	g++ setupEnv.cpp -I../ -c
-
-config.o: config.cpp
-	g++ config.cpp -I../ -c
+	rm *.o
