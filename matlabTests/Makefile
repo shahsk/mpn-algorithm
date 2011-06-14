@@ -1,4 +1,4 @@
-all: configure.o nominalPath potentialField bestPath
+all: clean configure.o nominalPath potentialField bestPath
 
 nominalPath: configure.o
 	matlab -nojvm -r "mex nominalPath.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
