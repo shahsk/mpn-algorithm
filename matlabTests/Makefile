@@ -1,4 +1,14 @@
-all: clean configure.o nominalPath potentialField bestPath
+#If things fail to compile, first make sure that ou conpiled everything
+#in the directory up
+#If that already worked, then you are missing libconfig++.
+#To install the included copy of libconfig:
+# tar -zxvf libconfig-1.4.7.tar.gz 
+# cd libconfig-1.4.7
+# ./configure
+# make
+# sudo make install
+
+all: configure.o nominalPath potentialField bestPath getObPos
 
 nominalPath: configure.o
 	matlab -nojvm -r "mex nominalPath.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
