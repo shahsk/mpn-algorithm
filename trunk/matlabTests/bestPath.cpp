@@ -12,6 +12,7 @@
   Output arguments: row vector of x values, row vector of y values
 
   Example usage in matlab:
+  [x,y] = bestPath([.1,.1],.01)
 
 
 */

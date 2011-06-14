@@ -12,9 +12,10 @@
 
 class Obstacle {
 private:
+public:
 	double pos[DIM];//x,y(,z) position
 	double radius;//size of the obstacle
-public:
+
 	Obstacle(double * position,double r);
 	virtual ~Obstacle();
 
