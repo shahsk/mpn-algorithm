@@ -117,6 +117,10 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 	//std::cout << "samples: " << nSamples << std::endl;
 	int steps = ceil(static_cast<double>(params.predictionHorizon - params.currentTime)/dt);
 	int controlHorizonIndex = ceil(static_cast<double>(params.controlHorizon + params.currentTime)/dt);
+	if(steps < 1)
+	  steps = 1;
+	if(controlHorizonIndex > steps)
+	  controlHorizonIndex = steps-1;
 
 	double startCost = e.potentialField(start);
 
