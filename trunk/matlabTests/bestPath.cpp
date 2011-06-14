@@ -8,7 +8,7 @@
 /*
   Go-between from matlab to MPN2D::generateBestPath for visualization
 
-  Input arguments: [x,y] start, precision(dt), (optional filename)
+  Input arguments: [x,y] start, precision(dt), (optional currentTime,filename)
   Output arguments: row vector of x values, row vector of y values
 
   Example usage in matlab:
@@ -18,7 +18,7 @@
 */
 void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   //Check for correct function syntax
-  if(!(nrhs == 2 || nrhs == 3) )
+  if(!(nrhs == 2 || nrhs == 3 || nrhs == 4) )
     mexErrMsgTxt("Incorrect number of input arguments");
   if(!(nlhs == 2))
     mexErrMsgTxt("Incorrect number of output arguments");
@@ -34,9 +34,9 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   //Initialize environment
   Environment * e;
   MPNParams * mp;
-  if(nrhs == 3){
+  if(nrhs == 4){
     char filename[256];
-    mxGetString(prhs[2],filename,mxGetN(prhs[2])+1);
+    mxGetString(prhs[3],filename,mxGetN(prhs[3])+1);
     //mexPrintf(filename);
     configure(filename,e,mp);
   }
@@ -44,6 +44,10 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
     configure(e,mp);
   }
   
+  //Adjust current time if necessary
+  if(nrhs == 3 || nrhs == 4)
+    mp->currentTime = *mxGetPr(prhs[2]);
+
   //Calculate a sample path
   srand(time(NULL));
   double ** path;
