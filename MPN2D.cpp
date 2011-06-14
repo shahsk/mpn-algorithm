@@ -80,7 +80,7 @@ double anglePerturb(MPNParams & params, double * gradient,double polytime){
 		legendreSum += params.controlParameters[i]*alglib::legendrecalculate(i,polytime);
 	}
 
-	legendreSum*=(M_PI/2.);
+	legendreSum*=(M_PI);
 	return atan2(gradient[1]+legendreSum,gradient[0]+legendreSum);
 }
 
@@ -190,4 +190,5 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 
 	return steps;
 }
+
 

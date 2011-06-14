@@ -12,6 +12,9 @@ samplePath: configure.o
 bestPath: configure.o
 	matlab -nojvm -r "mex bestPath.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
 
+getObPos: configure.o
+	matlab -nojvm -r "mex getObPos.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
+
 
 #test: 
 #	g++ test.cpp *.o ../*.o ../alglib/*.o -I../ -lconfig++
