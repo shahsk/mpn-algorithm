@@ -110,13 +110,13 @@ double incrementalCost(Environment & e, MPNParams & params,double ** path, doubl
 }
 
 
-int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,double * start, double dt){
-
+void generateBestPath(Environment & e, MPNParams & params, double ** &bestPath, double **& bestControl, int & steps, int & controlHorizonIndex,  double * start, double dt){
 	//ln(a) = log(a)/log(e) -> ln(a)/ln(b) = log(a)/log(b)
 	double nSamples = log(1/(params.confidence))/log(1/(1-params.level));
 	//std::cout << "samples: " << nSamples << std::endl;
-	int steps = ceil(static_cast<double>(params.predictionHorizon - params.currentTime)/dt);
-	int controlHorizonIndex = ceil(static_cast<double>(params.controlHorizon + params.currentTime)/dt);
+	steps = ceil(static_cast<double>(params.predictionHorizon)/dt);
+	controlHorizonIndex = ceil(static_cast<double>(params.controlHorizon/dt));
+
 	if(steps < 1)
 	  steps = 1;
 	if(controlHorizonIndex > steps)
@@ -134,6 +134,11 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 	for(int i(0); i<steps; i++){
 		optimalPath[i][0] = nominal[i][0];
 		optimalPath[i][1] = nominal[i][1];
+	}
+	double ** optimalControl = allocatePoints(steps);
+	for(int i(0); i<steps; i++){
+		optimalControl[i][0] = nominalControl[i][0];
+		optimalControl[i][1] = nominalControl[i][1];
 	}
 
 	double incrCost = incrementalCost(e,params,nominal,nominalControl,dt,steps);
@@ -173,6 +178,11 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 					optimalPath[i][0] = currentPath[i][0];
 					optimalPath[i][1] = currentPath[i][1];
 				}
+				//Copy values into optimalControl
+				for(int i(0); i<steps; i++){
+					optimalControl[i][0] = currentControlPath[i][0];
+					optimalControl[i][1] = currentControlPath[i][1];
+				}
 				//Copy parameters into optimalParams
 				for(unsigned int i(0); i<params.nLegendrePolys; i++){
 					optimalParams[i] = params.controlParameters[i];
@@ -183,6 +193,7 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 	}while(acceptedSoFar < nSamples);
 
 	bestPath = optimalPath;
+	bestControl = optimalControl;
 	for(unsigned int i(0); i<params.nLegendrePolys; i++){
 		params.controlParameters[i] = optimalParams[i];
 	}
@@ -192,7 +203,6 @@ int generateBestPath(Environment & e, MPNParams & params, double ** &bestPath,do
 	cleanupPoints(nominalControl,steps);
 	cleanupPoints(currentControlPath,steps);
 
-	return steps;
 }
 
 

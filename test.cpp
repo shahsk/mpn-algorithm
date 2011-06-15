@@ -25,15 +25,20 @@ int main(){
 
 	double start[2] = {-0.524105140444470,-2.046514982759156};
 	//int steps = 100;
-	//double ** controlPath = allocatePoints(steps);
+	double ** controlPath; //= allocatePoints(steps);
 	double ** path; //= allocatePoints(steps);
 	double dt = .1;
+	int s,controlIndex;
 
-	int s = generateBestPath(e, params, path, start, dt);
+	generateBestPath(e, params, path, controlPath, s, controlIndex,
+				 start, dt);
 
 
 	for(int i(0); i<s; i++){
-		std::cout << path[i][0] << "," << path[i][1] << std::endl;
+	  std::cout << path[i][0] << "," << path[i][1] << std::endl;
+	  if(i == controlIndex){
+	    std::cin.get();
+	  }
 	}
 
 	//samplePath(e,params,controlPath,path,start,dt,steps);
