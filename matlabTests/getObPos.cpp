@@ -21,7 +21,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   MPNParams * mp;
   if(nrhs == 1){
     char filename[256];
-    mxGetString(prhs[1],filename,mxGetN(prhs[1])+1);
+    mxGetString(prhs[0],filename,mxGetN(prhs[0])+1);
     mexPrintf(filename);
     configure(filename,e,mp);
   }

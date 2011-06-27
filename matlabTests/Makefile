@@ -16,6 +16,9 @@ nominalPath: configure.o
 potentialField: configure.o
 	matlab -nojvm -r "mex potentialField.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
 
+negGradient: configure.o
+	matlab -nojvm -r "mex negGradient.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
+
 samplePath: configure.o
 	matlab -nojvm -r "mex samplePath.cpp configure.o ../MPN2D.o ../Obstacle.o ../Environment.o ../alglib/ap.o ../alglib/alglibinternal.o ../alglib/specialfunctions.o -I../ -lconfig++; quit()" 
 
