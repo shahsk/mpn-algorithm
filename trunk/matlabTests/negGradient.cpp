@@ -4,22 +4,22 @@
 
 
 /*
-  Go-between from matlab to environment.potentialField for visualization
+  Go-between from matlab to environment.negGradient for visualization
 
-  Input arguments: matrix of x values, matrix of y values, (optional filename)
-  Output arguments: matrix of z values for each [x,y] point
+  Input arguments: matrix of x values, matrix of y values (optional filename)
+  Output arguments: matrix of dx values, matrix of dy values
 
   Example usage in matlab:
   [xa,ya] = meshgrid(0:.01:1,0:.01:1);
-  z = potentialField(xa,ya,'default.cfg');
-  surf(xa,ya,z)
+  [dx,dy] = negGradient(xa,ya,'default.cfg');
+  quiver(dx,dy,xa,ya);
 
 */
 void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   //Check for correct function syntax
   if(!(nrhs == 2 || nrhs == 3))
     mexErrMsgTxt("Incorrect number of input arguments");
-  if(nlhs != 1)
+  if(nlhs != 2)
     mexErrMsgTxt("Incorrect number of output arguments");
 
   //Get matrix dimensions and check for matching
@@ -35,7 +35,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   if(nrhs == 3){
     char filename[256];
     mxGetString(prhs[2],filename,mxGetN(prhs[2])+1);
-    mexPrintf(filename);
+    //mexPrintf(filename);
     configure(filename,e,mp);
   }
   else{
@@ -44,17 +44,20 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
 
   //Allocate space for the answer
   plhs[0] = mxCreateDoubleMatrix(rows,cols,mxREAL);
+  plhs[1] = mxCreateDoubleMatrix(rows,cols,mxREAL);
   
 
   //Populate the answer array with the value of the potential field
-  double tmpPoint[2];
+  double tmpPoint[2],tmpAns[2];
   int index;
   for(unsigned int r(0); r<rows; r++){
     for(unsigned int c(0); c<cols; c++){
       index = r + rows*c;
       tmpPoint[0] = mxGetPr(prhs[0])[index];
       tmpPoint[1] = mxGetPr(prhs[1])[index];
-      mxGetPr(plhs[0])[index] = e->potentialField(tmpPoint);
+      e->negatedGradient(tmpPoint,tmpAns);
+      mxGetPr(plhs[0])[index] = tmpAns[0];
+      mxGetPr(plhs[1])[index] = tmpAns[1];
     }
   }
 }
