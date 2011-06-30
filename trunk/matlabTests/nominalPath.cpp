@@ -7,7 +7,8 @@
 /*
   Go-between from matlab to MPN2D::nominalPath for visualization
 
-  Input arguments: [x,y] start, precision(dt), steps, (optional filename)
+  Input arguments: [x,y,(optional theta)] start, precision(dt), steps, 
+  (optional filename)
   Output arguments: row vector of x values, row vector of y values (optional 
   row vector of dx values, row vector of dy values)
 
@@ -24,9 +25,15 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
     mexErrMsgTxt("Incorrect number of output arguments");
 
   //Get start position and check for correct dimensions
-  if(mxGetM(prhs[0]) != 1 || mxGetN(prhs[0]) != 2)
-    mexErrMsgTxt("Start position must be in [x,y] form");
+  if(mxGetM(prhs[0]) != 1 || !(mxGetN(prhs[0]) == 2 || mxGetN(prhs[0]) == 3))
+    mexErrMsgTxt("Start position must be in [x,y,theta] form");
   double start[2] = {mxGetPr(prhs[0])[0],mxGetPr(prhs[0])[1]};
+  double startOri;
+
+  if(mxGetN(prhs[0]) == 3)
+    startOri = mxGetPr(prhs[0])[2];
+  else
+    startOri = 0;
 
   //Get precision, steps
   double dt = *mxGetPr(prhs[1]);
@@ -56,7 +63,8 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   //Calculate the nominal path
   double ** nominal = allocatePoints(steps);
   double ** controlPath = allocatePoints(steps);
-  nominalPath(*e,controlPath,nominal,start,dt,steps);
+  double finalOri;
+  nominalPath(*e,controlPath,nominal,start,startOri,dt,steps,finalOri);
 
   //Copy the answer into the matlab vectors for output
   for(int i(0); i<steps; i++){

@@ -3,6 +3,7 @@
 #include "Environment.h"
 #include "Obstacle.h"
 #include "MPN2D.h"
+#include <string.h>
 
 #include "configure.h"
 
@@ -21,7 +22,17 @@ void configure(char file[],Environment * & e,MPNParams * & mp){
   double goal[2] = {c.lookup("environment.destination")[0],
 		 c.lookup("environment.destination")[1]};
 
-  e  = new Environment(goal,pot_param,radius);
+  const char * type;
+  if(c.lookupValue("environment.type",type)){
+    if(strcmp(type,"dipolar") == 0 ){
+      double goalOri = c.lookup("environment.goal_orientation");
+      double epsilon = c.lookup("environment.epsilon");
+      e  = new DipolarEnvironment(goal,pot_param,radius,epsilon,goalOri);
+    }
+  }
+  else{
+    e = new Environment(goal,pot_param,radius);
+  }
 
   if(c.exists("environment.obstacles")){
     double rad,pos[2];
