@@ -8,7 +8,7 @@
 /*
   Go-between from matlab to MPN2D::generateBestPath for visualization
 
-  Input arguments: [x,y] start, precision(dt), (optional currentTime,filename)
+  Input arguments: [x,y,(theta)] start, precision(dt), (optional currentTime,filename)
   Output arguments: row vector of x values, row vector of y values, control 
   horizon index, (optional dx, dy)
 
@@ -25,9 +25,16 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
     mexErrMsgTxt("Incorrect number of output arguments");
 
   //Get start position and check for correct dimensions
-  if(mxGetM(prhs[0]) != 1 || mxGetN(prhs[0]) != 2)
-    mexErrMsgTxt("Start position must be in [x,y] form");
+  if(mxGetM(prhs[0]) != 1 || !(mxGetN(prhs[0]) == 2 || mxGetN(prhs[0]) == 3 ))
+    mexErrMsgTxt("Start position must be in [x,y,theta] form");
+
   double start[2] = {mxGetPr(prhs[0])[0],mxGetPr(prhs[0])[1]};
+  double startOri;
+
+  if(mxGetN(prhs[0]) == 3)
+    startOri = mxGetPr(prhs[0])[2];
+  else
+    startOri = 0;
 
   //Get precision
   double dt = *mxGetPr(prhs[1]);
@@ -51,9 +58,9 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
 
   //Calculate a sample path
   srand(time(NULL));
-  double ** path, ** control;
+  double ** path, ** control,finalOri;
   int steps,controlIndex;
-  generateBestPath(*e,*mp,path,control,steps,controlIndex,start,dt);
+  generateBestPath(*e,*mp,path,control,steps,controlIndex,start,startOri,dt,finalOri);
 
   //Allocate space for the answer
   plhs[0] = mxCreateDoubleMatrix(1,steps,mxREAL);

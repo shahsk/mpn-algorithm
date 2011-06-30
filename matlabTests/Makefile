@@ -36,7 +36,7 @@ getObPos: configure.o
 #	g++ setupEnv.cpp -I../ -c
 
 configure.o: configure.cpp
-	g++ configure.cpp -I../ -c
+	g++ configure.cpp -I../ -c -lconfig++
 
 clean:
 	rm *.o
