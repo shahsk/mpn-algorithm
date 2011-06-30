@@ -8,50 +8,6 @@
 #include "Environment.h"
 #include <math.h>
 #include <vector>
-/*
-//Uses Euler integration to find a trajectory along the negated gradient. Uses a step size of dt for
-//a given number of steps. Puts the resulting trajectory in result, an n x steps array
-double** Environment::eulerIntegrate(double * q,double dt,int steps){
-	double currentPos[DIM],delta[DIM];
-	double ** result = new double * [steps];
-
-	//copy q into currentPos to start
-	for(int i(0); i<DIM; i++)
-		currentPos[i] = q[i];
-
-	for(int s(0); s<steps; s++){
-		negatedGradient(currentPos,delta);
-		result[s] = new double[DIM];
-		for(int i(0); i<DIM; i++){
-			currentPos[i] += delta[i]*dt;
-			result[s][i] = currentPos[i];
-		}
-	}
-	return result;
-}
-
-//The perturbation function is expected to return a double, representing the amount to disturb the given dimension
-double ** Environment::eulerIntegratePerturb(double * q,double dt,int steps,double (perturb)(double *,double,int dim)){
-
-	double currentPos[DIM],delta[DIM];
-	double ** result = new double * [steps];
-
-	//copy q into currentPos to start
-	for(int i(0); i<DIM; i++)
-		currentPos[i] = q[i];
-
-	for(int s(0); s<steps; s++){
-		negatedGradient(currentPos,delta);
-		result[s] = new double[DIM];
-		for(int i(0); i<DIM; i++){
-			currentPos[i] += (delta[i] + perturb(currentPos,dt,i))*dt;
-			result[s][i] = currentPos[i];
-		}
-	}
-	return result;
-
-
-}*/
 
 //return just beta value of the workspace
 double Environment::calculateBeta0(double * q){

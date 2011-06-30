@@ -12,7 +12,7 @@
   Example usage in matlab:
   [xa,ya] = meshgrid(0:.01:1,0:.01:1);
   [dx,dy] = negGradient(xa,ya,'default.cfg');
-  quiver(dx,dy,xa,ya);
+  quiver(xa,ya,dx,dy);
 
 */
 void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
