@@ -21,6 +21,13 @@ inline double norm(double x,double y){
 
 using namespace PlayerCc;
 
+/*
+  Simulates Shridhar's paper: a point robot moves through a workspace 
+  (potentially with obstacles) and is distubed by a random normal velocity at
+  every iteration. Stage can be launched in the stageSim directory, and 
+  obstacles added by both entering their information here (commented out 
+  example) or in simple.world (commented-out example). K is the control gain.
+*/
 int main( ){
   
   //Config
