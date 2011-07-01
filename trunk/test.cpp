@@ -1,3 +1,4 @@
+#include "matlabTests/configure.h"
 #include "MPN2D.h"
 #include "Environment.h"
 #include "Obstacle.h"
@@ -7,80 +8,104 @@
 #include <iostream>
 #include <time.h>
 
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/variate_generator.hpp>
-#include <boost/random/mersenne_twister.hpp>
+#include <boost/thread.hpp>
 
 #define ROBOTIP "localhost"
 #define ROBOTPORT 6665
 
-
-inline double norm(double x,double y){
-  return sqrt(pow(x,2)+pow(y,2));
-}
+#define TOLERANCE .1
+#define PRECISION .01
 
 using namespace PlayerCc;
 
-int main( ){
-  
-  //Config
-  double goal[2] = {0,0};
-  double radius = 5.0;
-  double epsilon = .1;
-  double K = 1;
+struct trajController{
+  PlayerClient * client;
+  Position2dProxy * pos;
 
-  Environment e(goal,1.0,radius);
-  
-  //Obstacle setup
-  //double obPos1[2] = {-3.0,-1.0};
-  //double obPos2[2] = {-2.0,-2.0};
-  //e.obstacles.push_back(Obstacle(obPos1,1));
-  //e.obstacles.push_back(Obstacle(obPos2,1));
-  
-  PlayerClient client(ROBOTIP,ROBOTPORT);
-  Position2dProxy pos(&client,0);
-  
-  double position[2],negGradient[2],desired[2],angle,curr_time,
-    prev_time,tmp;
-  
-  //Instantiate random number generator
-  srand(time(NULL));
-  boost::mt19937 seedX,seedY;	
-  seedX.seed(rand());
-  seedY.seed(rand());
-  
-  boost::normal_distribution<> dist(0, 1);
-  boost::variate_generator<boost::mt19937&, boost::normal_distribution<> > XError(seedX,dist),  YError(seedY,dist);
-  
-  timeval now,prev;
-  gettimeofday(&prev,NULL);
-  prev_time = prev.tv_sec + (prev.tv_usec/1000000.0);
-  
-  do{
-    
-    //Update information
-    client.Read();
-    position[0] = pos.GetXPos();
-    position[1] = pos.GetYPos();
-    angle = pos.GetYaw();
-    
-    gettimeofday(&now,NULL);
-    curr_time = now.tv_sec + (now.tv_usec/1000000.0);
-    
-    tmp = sqrt(curr_time-prev_time);
-    prev_time = curr_time;
-    //std::cout << tmp << std::endl;
-    
-    //Calculate the desired direction
-    e.negatedGradient(position,negGradient);
-    desired[0] = K*(negGradient[0]*cos(angle)- negGradient[1]*sin(angle));
-    desired[1] = K*(negGradient[0]*sin(angle)+ negGradient[1]*cos(angle));
-    
-    pos.SetSpeed(-(desired[0]+XError()*tmp),-(desired[1]+YError()*tmp),0);
-    
-    //std::cout << norm(position[0],position[1]) << std::endl;
+  double tmp[3],tol;
 
-  }while( norm(position[0],position[1]) > epsilon && 
-	  norm(position[0],position[1]) < radius );
+  trajController(){
+    client = new PlayerClient(ROBOTIP,ROBOTPORT);
+    pos = new Position2dProxy(client,0);
+    tol = TOLERANCE;
+
+    client->Read();
+    tmp[0] = pos->GetXPos();
+    tmp[1] = pos->GetYPos();
+    tmp[3] = pos->GetYaw();
+  }
+
+  void operator()(double ** path,double ** control,int CHI){
+    //Complicated stuff happens to drive the robot
+
+    //... but for now, we have this
+    pos->GoTo(path[CHI][0],path[CHI][1],
+	      atan2(control[CHI][1],control[CHI][0]) );
+    do{
+      sleep(.1);
+      client->Read();
+      tmp[0] = pos->GetXPos();
+      tmp[1] = pos->GetYPos();
+      tmp[3] = pos->GetYaw();
+    }while(gamma(tmp,path[CHI]) > tol*tol );
+    
+    return;
+  }
+
+};
+
+int main(){
+  
+  //Setup
+  char filename[] = "lab.cfg";
+  Environment * env;
+  MPNParams * params;
+  
+  configure(filename,env,params);
+
+  trajController robot;
+
+
+  int steps,CHI,nextSteps,nextCHI; //CHI = Control Horizon Index
+  double startOri,finalOri,start[2],dt = PRECISION;
+  double ** bestPath,**bestControl,**nextPath,**nextControl;
+
+  robot.client->Read();
+  start[0] = robot.pos->GetXPos();
+  start[1] = robot.pos->GetYPos();
+  startOri = robot.pos->GetYaw();
+  
+  //Generate an initial path
+  generateBestPath(*env,*params,bestPath,bestControl,steps,CHI,start,startOri,dt,finalOri);
+
+  while(gamma(start,env->goal) > TOLERANCE*TOLERANCE ){
+
+    start[0] = bestPath[CHI][0]; //Save a copy
+    start[1] = bestPath[CHI][1];
+    std::cout << start[0] << "," << start[1] << std::endl;
+    
+    //Start driving along the path
+    boost::thread driveThread(robot,bestPath,bestControl,CHI);
+    
+    //Compute the next path
+    startOri = finalOri;
+    generateBestPath(*env,*params,nextPath,nextControl,nextSteps,nextCHI,start,startOri,dt,finalOri);
+    
+    //Wait for robot to finish
+    driveThread.join();
+
+    //Set up for next iteration
+    cleanupPoints(bestPath,steps);
+    cleanupPoints(bestControl,steps);
+    bestPath = nextPath;
+    bestControl = nextControl;
+    steps = nextSteps;
+    CHI = nextCHI;
+    
+    params->currentTime += params->controlHorizon;
+    if(params->currentTime > params->predictionHorizon)
+      params->currentTime = 0;
+
+  }  
   
 }
