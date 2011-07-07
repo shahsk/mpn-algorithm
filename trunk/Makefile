@@ -4,7 +4,7 @@ OBJS = Environment.o Obstacle.o MPN2D.o
 all: brownianSim test
 
 test: test.cpp $(OBJS) alglib
-	g++ `pkg-config --cflags playerc++` test.cpp $(OBJS) $(ALGLIB_USED) matlabTests/configure.o -o test `pkg-config --libs playerc++` -lconfig++ -I./
+	g++ `pkg-config --cflags playerc++` test.cpp $(OBJS) alglib/*.o matlabTests/configure.o -o test `pkg-config --libs playerc++` -lconfig++ -I./ -I./alglib
 
 brownianSim: brownianSim.cpp $(OBJS) alglib
 	g++ `pkg-config --cflags playerc++` brownianSim.cpp $(OBJS) $(ALGLIB_USED) -o brownianSim `pkg-config --libs playerc++`
