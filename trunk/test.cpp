@@ -24,7 +24,7 @@
 #define KPY 2
 #define KDY 4
 
-#define VMAX 1
+#define VMAX .5
 #define OMEGAMAX 1
 
 #define POLYTIME 40
@@ -117,7 +117,8 @@ struct trajController{
     currTime = startTime;
     prevTime = startTime;
     int i=0;
-    while(currTime - startTime < time){
+
+    while(currTime - startTime < time && gamma(pose,goal) > tol*tol ){
       dt = currTime - prevTime;
       spline1ddiff(*xpath,currTime-startTime,desiredX[0],desiredV[0],desiredA[0]);
       spline1ddiff(*ypath,currTime-startTime,desiredX[1],desiredV[1],desiredA[1]);
@@ -135,6 +136,7 @@ struct trajController{
 	  pose[2] = atan2(desiredV[1],desiredV[0]);
 	  pos->GoTo(pose[0],pose[1],pose[2]);
 	  sleep(3);
+	  pos->SetSpeed(sqrt(gamma(desiredV[0])),0);
 	}
 	currVel[0] = desiredV[0];
 	currVel[1] = desiredV[1];
