@@ -40,7 +40,7 @@ pioneer2dx
   drive "diff"		  
   # can refer to the robot by this name
   name "r0"
-  pose [ 3 3 0 0 ] 
+  pose [ 2 2 0 0 ] 
 
   # pioneer2dx's sonars	will be ranger:0 and the laser will be ranger:1
   sicklaser( pose [ 0 0 0 0 ] ) 
@@ -55,23 +55,13 @@ pioneer2dx
   obstacle_return 1
 )
 
-#Add obstacles like this. Their position and size should match test.cpp
-
-model
-(
-	color "black"
-	bitmap "circle.png"
-	pose [1.0 1.0 0 0]
-	size [.4 .4 0]
-	obstacle_return 1
-	update_interval 50000
-)
+#Add obstacles like this. Their position and size should match the cfg file
 
 #model
 #(
 #	color "black"
 #	bitmap "circle.png"
-#	pose [-2.0 -2.0 0 0]
-#	size [1 1 0]
+#	pose [0.0 -1.0 0 0]
+#	size [.4 .4 .4]
 #	obstacle_return 1
 #)
