@@ -14,22 +14,24 @@
 #define ROBOTIP "192.168.1.108"
 #define ROBOTPORT 6666
 
-#define TOLERANCE .05
+#define TOLERANCE .1
 #define PRECISION .01
-#define DEGREE 3
+#define DEGREE 10
 
 //Controller proportions
 #define KPX 1
-#define KDX 2
+#define KDX 3
 #define KPY 1
-#define KDY 2
+#define KDY 3
 
-#define VMAX .3
-#define VMIN .1
-#define OMEGAMAX 1
-#define OMEGAMIN .5
+#define VMAX .2
+#define VMIN .15
+#define OMEGAMAX .5
+#define OMEGAMIN 0
 
-#define POLYTIME 10
+#define POLYTIME 20
+
+#define CMD_RATE .3
 
 using namespace PlayerCc;
 
@@ -38,14 +40,14 @@ double saturate(double val, double min, double max){
   if(fabs(val) > min && fabs(val) < max)
     return val;
 
-  if(fabs(val) < min){
+  if(fabs(val) <= min){
     if(val > 0)
       return min;
     else
       return -min;
   }
   
-  if(fabs(val) > max){
+  if(fabs(val) >= max){
     if(val > 0)
       return max;
     else
@@ -54,8 +56,26 @@ double saturate(double val, double min, double max){
 
 }
 
+
 double satv(double v){return saturate(v,VMIN,VMAX); }
 double satw(double w){return saturate(w,OMEGAMIN,OMEGAMAX); }
+
+/*
+//Emulate the robot's minimum velocity for simulation
+double satv(double v){
+  if(fabs(v) < VMIN)
+    return 0;
+  else
+    return saturate(v,VMIN,VMAX);
+    }
+
+double satw(double v){
+  if(fabs(v) < OMEGAMIN)
+    return 0;
+  else
+    return saturate(v,OMEGAMIN,OMEGAMAX);
+    }*/
+
 
 int sign(double a){
   if(a>0)
@@ -64,53 +84,94 @@ int sign(double a){
     return -1;
 }
 
+
 //Builds 2 polynomials x(t) and y(t) on the given x,y trajectory. t ranges from 0 to 1
 void buildPolynoms(double ** path,double ** pathDeriv,int steps,double range,
 		  alglib::barycentricinterpolant * xpoly,
 		  alglib::barycentricinterpolant * ypoly){
 
   //Copy the path into arrays
-  alglib::real_1d_array x,y,t,dx,dy,weights("[1,1]");
-  x.setlength(2);
-  y.setlength(2);
-  t.setlength(2);
-  dx.setlength(2);
-  dy.setlength(2);
+  alglib::real_1d_array x,y,t,weights,tc,xc,yc;
+  x.setlength(steps+1);
+  y.setlength(steps+1);
+  t.setlength(steps+1);
+  weights.setlength(steps+1);
 
-  x[0] = path[0][0];
-  x[1] = path[steps][0];
+  double dt = range/static_cast<double>(steps);
+  for(int i(0); i<steps+1; i++){
+    t[i] = (i)*dt;
+    x[i] = path[i][0];
+    y[i] = path[i][1];
+    weights[i] = 1;
 
-  y[0] = path[0][1];
-  y[1] = path[steps][1];
+  }
 
-  dx[0] = (path[1][0]-x[0])/(range/steps);
-  dx[1] = (path[steps+1][0]-x[1])/(range/steps);
-
-  dy[0] = (path[1][1]-y[0])/(range/steps);
-  dy[1] = (path[steps+1][1]-y[1])/(range/steps);
-
-  t[0] = 0;
-  t[1] = range;
-
+  //std::cout << dt << std::endl;
+  //std::cout << path[steps][0] << "," << path[steps][1] << std::endl;
+  
   int info;
-  alglib::polynomialfitreport junk;
-  alglib::integer_1d_array ones("[1,1]");
+  //alglib::polynomialfitreport rep;
+  alglib::barycentricfitreport rep;
+  /*
+  polynomialfit(t,x,steps+1,DEGREE,info,*xpoly,rep);
+  polynomialfit(t,y,steps+1,DEGREE,info,*ypoly,rep);
+  */
+
+  //put constraints on the endpoint
+  tc.setlength(3);
+  xc.setlength(3);
+  yc.setlength(3);
+
+  tc[0] = range;
+  tc[1] = 0;
+  tc[2] = range;
+
+  xc[0] = path[steps][0];
+  xc[1] = path[0][0];
+  xc[2] = (path[steps+1][0]-path[steps][0])/dt;
+
+  yc[0] = path[steps][1];
+  yc[1] = path[0][1];
+  yc[2] = (path[steps+1][1]-path[steps][1])/dt;
+
+  alglib::integer_1d_array type("[0,0,1]");
 
   /*
-alglib::polynomialfitwc(
+alglib::barycentricfitfloaterhormannwc(
     real_1d_array x,
     real_1d_array y,
     real_1d_array w,
+    ae_int_t n,
     real_1d_array xc,
     real_1d_array yc,
     integer_1d_array dc,
+    ae_int_t k,
     ae_int_t m,
     ae_int_t& info,
-    barycentricinterpolant& p,
-    polynomialfitreport& rep);
+    barycentricinterpolant& b,
+    barycentricfitreport& rep);*/
+
+  //polynomialfitwc(t,x,weights,tc,xc,type,DEGREE,info,*xpoly,rep);
+  barycentricfitfloaterhormannwc(t,x,weights,t.length(),tc,xc,type,tc.length(),DEGREE,info,*xpoly,rep);
+  //std::cout << info << std::endl;
+  //polynomialfitwc(t,y,weights,tc,yc,type,DEGREE,info,*ypoly,rep);
+  barycentricfitfloaterhormannwc(t,y,weights,t.length(),tc,yc,type,tc.length(),DEGREE,info,*ypoly,rep);
+  //std::cout << info << std::endl;
+
+  /*
+  alglib::real_1d_array coefs;
+  polynomialbar2pow(*xpoly,coefs);
+  std::cout << "xp = [";
+  for(int i(coefs.length()-1); i>-1; i--)
+    std::cout << coefs[i] << ",";
+  std::cout << "];\n";
+
+  polynomialbar2pow(*ypoly,coefs);
+  std::cout << "yp = [";
+  for(int i(coefs.length()-1); i>-1; i--)
+    std::cout << coefs[i] << ",";
+  std::cout << "];\n";
   */
-  alglib::polynomialfitwc(t,x,weights,t,dx,ones,DEGREE,info,*xpoly,junk);
-  alglib::polynomialfitwc(t,y,weights,t,dy,ones,DEGREE,info,*ypoly,junk);
   
 }
 
@@ -141,6 +202,7 @@ struct trajController{
 		  alglib::barycentricinterpolant * ypath,
 		  double time,bool correct){
 
+    //std::cout << "path = [";
     goal[0] = barycentriccalc(*xpath,time);
     goal[1] = barycentriccalc(*ypath,time);
 
@@ -151,76 +213,80 @@ struct trajController{
     startTime = start.tv_sec + start.tv_usec/1000000.;
     currTime = startTime;
     prevTime = startTime;
-    int i=0;
 
+    bool first = true;
     while(currTime - startTime < time && gamma(pose,goal) > tol*tol ){
-    //while(gamma(pose,goal) > tol*tol){
       dt = currTime - prevTime;
-      //spline1ddiff(*xpath,currTime-startTime,desiredX[0],desiredV[0],desiredA[0]);
-      //spline1ddiff(*ypath,currTime-startTime,desiredX[1],desiredV[1],desiredA[1]);
+      //dt = CMD_RATE;
 
       barycentricdiff2(*xpath,currTime-startTime,desiredX[0],desiredV[0],desiredA[0]);
       barycentricdiff2(*ypath,currTime-startTime,desiredX[1],desiredV[1],desiredA[1]);
+      
+      //std::cout << desiredX[0] << "," << desiredX[1] << "," << currTime-startTime << ";";
 
-      //std::cout << "desired vx: " << desiredV[0] << " desired vy: " << desiredV[1] << std::endl;
+      //std::cout << "desired x: " << desiredX[0] << " desired y: " << desiredX[1] << std::endl;
     
       client->Read();
       pose[0] = pos->GetXPos();
       pose[1] = pos->GetYPos();
       pose[2] = pos->GetYaw();
 
-      if(i==0){
-	i=-1;
-	//if(correct){
-	  
-	  //do{
-	  //omega = satw(atan2(desiredV[1],desiredV[0])-pose[2]);
-	  //pos->SetSpeed(0, omega);
-	  //client->Read();
-	  //pose[0] = pos->GetXPos();
-	  //pose[1] = pos->GetYPos();
-	  //pose[2] = pos->GetYaw();
-	    //}while(omega > tol);
-	  //pos->SetSpeed(satv(sqrt(gamma(desiredV))),0);
-	//}
+      if(correct && first){
+	//std::cout << "HEREHEREHEREHERE\n";
 	currVel[0] = desiredV[0];
 	currVel[1] = desiredV[1];
       }
       else{
-	currVel[0] = pos->GetXSpeed()*cos(pose[2]);
-	currVel[1] = pos->GetXSpeed()*sin(pose[2]);
+	currVel[0] = fabs(pos->GetXSpeed())*cos(pose[2]);
+	currVel[1] = fabs(pos->GetXSpeed())*sin(pose[2]);
 	//currVel[0] = prevVel*cos(pose[2])*((rand()-rand())
 	//				   /static_cast<double>(RAND_MAX));
 	//currVel[1] = prevVel*sin(pose[2])*((rand()-rand())
 	//				   /static_cast<double>(RAND_MAX));
 
       }
+      
+      //std::cout << "currvel: " <<currVel[0] << "," << currVel[1] << std::endl;
 
       u[0] = desiredA[0] + KPX*(desiredX[0] - pose[0] ) + KDX*(desiredV[0] - currVel[0]);
       u[1] = desiredA[1] + KPX*(desiredX[1] - pose[1] ) + KDX*(desiredV[1] - currVel[1]);
-  
+
+      //std::cout << "u: " <<u[0] << "," << u[1] << std::endl;
+
       acc = u[0]*cos(pose[2]) + u[1]*sin(pose[2]);
       v = sqrt(gamma(currVel)) + acc*dt;
       omega = (u[1]*cos(pose[2]) - u[0]*sin(pose[2]))/(v);
 
+      //std::cout << currVel[0] << "," << currVel[1] << std::endl;
+      //std::cout << sin(pose[2]) << std::endl;
+
+
       v = satv(v);
       omega = satw(omega);
-
-      //std::cout << "vel: " << v << " omega: " << omega << std::endl;
+    
       pos->SetSpeed(v,omega);
 
+      //std::cout << "vel: " << v << " omega: " << omega << std::endl;    
+
       prevTime = currTime;
-      gettimeofday(&now,NULL);
-      currTime = now.tv_sec + now.tv_usec/1000000.;
+      do{
+	usleep(100);
+	gettimeofday(&now,NULL);
+	currTime = now.tv_sec + now.tv_usec/1000000.;
+      }while(currTime-prevTime < CMD_RATE);
 
       prevVel = v;
       prevOmega = omega;
+      first = false;
+      std::cout << currTime-prevTime << std::endl;
     }
     
 
-    std::cout << "DONE!\n";
+    //std::cout << "DONE!\n";
     std::cout << "Time used: " << currTime - startTime << std::endl;
+    //std::cout << "];\n";
   }
+
 };
 
 int main(){
@@ -256,7 +322,7 @@ int main(){
   generateBestPath(*env,*params,bestPath,bestControl,steps,CHI,start,startOri,dt,finalOri);
   buildPolynoms(bestPath,bestControl,CHI,time,currXPoly,currYPoly);
 
-  std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI])) << std::endl;
+  //std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI])) << std::endl;
 
   bool dummy = true;
   while(gamma(start,env->goal) > TOLERANCE*TOLERANCE ){
@@ -264,8 +330,9 @@ int main(){
     start[0] = bestPath[CHI][0];
     start[1] = bestPath[CHI][1];
 
-    //start[0] = spline1dcalc(*currXPoly,time); //Save a copy
-    //start[1] = spline1dcalc(*currYPoly,time);//bestPath[CHI][1];
+    //start[0] = barycentriccalc(*currXPoly,time);//bestPath[CHI][0];
+    //start[1] = barycentriccalc(*currYPoly,time);//bestPath[CHI][1];
+
     //std::cout << start[0] << "," << start[1] << std::endl;
     
     //Start driving along the path
@@ -276,8 +343,8 @@ int main(){
     generateBestPath(*env,*params,nextPath,nextControl,nextSteps,nextCHI,start,startOri,dt,finalOri);
     buildPolynoms(nextPath,nextControl,nextCHI,time,nextXPoly,nextYPoly);
 
-    std::cout << "nominal final pos: " << nextPath[nextCHI][0] << "," << nextPath[nextCHI][1] << std::endl;
-    std::cout << "displacement: " << sqrt(gamma(nextPath[0],nextPath[nextCHI])) << std::endl;
+    //std::cout << "nominal final pos: " << nextPath[nextCHI][0] << "," << nextPath[nextCHI][1] << std::endl;
+    //std::cout << "displacement: " << sqrt(gamma(nextPath[0],nextPath[nextCHI])) << std::endl;
 
     //Set up for next iteration
     cleanupPoints(bestPath,steps);
