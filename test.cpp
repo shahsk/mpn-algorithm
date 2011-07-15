@@ -26,12 +26,12 @@
 
 #define VMAX .25
 #define VMIN .1
-#define OMEGAMAX .5
+#define OMEGAMAX .3
 #define OMEGAMIN 0
 
-#define POLYTIME params->controlHorizon
+#define POLYTIME 2*params->controlHorizon
 
-#define CMD_RATE .3
+#define CMD_RATE .1
 
 using namespace PlayerCc;
 
@@ -57,10 +57,10 @@ double saturate(double val, double min, double max){
 }
 
 
-//double satv(double v){return saturate(v,VMIN,VMAX); }
+double satv(double v){return saturate(v,VMIN,VMAX); }
 double satw(double w){return saturate(w,OMEGAMIN,OMEGAMAX); }
 
-
+/*
 //Emulate the robot's minimum velocity for simulation
 double satv(double v){
   if(fabs(v) < VMIN)
@@ -68,14 +68,14 @@ double satv(double v){
   else
     return saturate(v,VMIN,VMAX);
 }
-/*
+
 double satw(double v){
   if(fabs(v) < OMEGAMIN)
     return 0;
   else
     return saturate(v,OMEGAMIN,OMEGAMAX);
-    }*/
-
+}
+*/
 
 int sign(double a){
   if(a>0)
@@ -266,7 +266,7 @@ struct trajController{
     
       pos->SetSpeed(v,omega);
 
-      //std::cout << "vel: " << v << " omega: " << omega << std::endl;    
+      std::cout << "vel: " << v << " omega: " << omega << std::endl;    
 
       prevTime = currTime;
       do{
