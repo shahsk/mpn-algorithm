@@ -11,12 +11,12 @@
 
 #include <boost/thread.hpp>
 
-#define ROBOTIP "192.168.1.108"
-#define ROBOTPORT 6666
+#define ROBOTIP "localhost"//"192.168.1.108"
+#define ROBOTPORT 6665
 
 #define TOLERANCE .1
 #define PRECISION .01
-#define DEGREE 10
+#define DEGREE 4
 
 //Controller proportions
 #define KPX 1
@@ -24,12 +24,12 @@
 #define KPY 1
 #define KDY 3
 
-#define VMAX .2
-#define VMIN .15
+#define VMAX .25
+#define VMIN .1
 #define OMEGAMAX .5
 #define OMEGAMIN 0
 
-#define POLYTIME 20
+#define POLYTIME params->controlHorizon
 
 #define CMD_RATE .3
 
@@ -57,18 +57,18 @@ double saturate(double val, double min, double max){
 }
 
 
-double satv(double v){return saturate(v,VMIN,VMAX); }
+//double satv(double v){return saturate(v,VMIN,VMAX); }
 double satw(double w){return saturate(w,OMEGAMIN,OMEGAMAX); }
 
-/*
+
 //Emulate the robot's minimum velocity for simulation
 double satv(double v){
   if(fabs(v) < VMIN)
     return 0;
   else
     return saturate(v,VMIN,VMAX);
-    }
-
+}
+/*
 double satw(double v){
   if(fabs(v) < OMEGAMIN)
     return 0;
@@ -237,8 +237,8 @@ struct trajController{
 	currVel[1] = desiredV[1];
       }
       else{
-	currVel[0] = fabs(pos->GetXSpeed())*cos(pose[2]);
-	currVel[1] = fabs(pos->GetXSpeed())*sin(pose[2]);
+	currVel[0] = pos->GetXSpeed()*cos(pose[2]);
+	currVel[1] = pos->GetXSpeed()*sin(pose[2]);
 	//currVel[0] = prevVel*cos(pose[2])*((rand()-rand())
 	//				   /static_cast<double>(RAND_MAX));
 	//currVel[1] = prevVel*sin(pose[2])*((rand()-rand())
@@ -278,7 +278,7 @@ struct trajController{
       prevVel = v;
       prevOmega = omega;
       first = false;
-      std::cout << currTime-prevTime << std::endl;
+      //std::cout << currTime-prevTime << std::endl;
     }
     
 
@@ -322,7 +322,7 @@ int main(){
   generateBestPath(*env,*params,bestPath,bestControl,steps,CHI,start,startOri,dt,finalOri);
   buildPolynoms(bestPath,bestControl,CHI,time,currXPoly,currYPoly);
 
-  //std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI])) << std::endl;
+  std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI])) << std::endl;
 
   bool dummy = true;
   while(gamma(start,env->goal) > TOLERANCE*TOLERANCE ){
