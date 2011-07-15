@@ -1,4 +1,4 @@
-ALGLIB_USED = alglib/alglibinternal.o alglib/ap.o alglib/specialfunctions.o
+ALGLIB_USED = alglib/alglibinternal.o alglib/ap.o alglib/specialfunctions.o alglib/interpolation.o alglib/alglibmisc.o alglib/optimization.o alglib/linalg.o alglib/dataanalysis.o alglib/integration.o alglib/solvers.o alglib/statistics.o
 OBJS = Environment.o Obstacle.o MPN2D.o
 
 all: brownianSim test
