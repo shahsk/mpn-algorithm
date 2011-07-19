@@ -7,6 +7,6 @@
 #include "MPN2D.h"
 
 void configure(Environment * & e,MPNParams * & mp);
-void configure(char file[],Environment * & e,MPNParams * & mp);
+void configure(const char * file,Environment * & e,MPNParams * & mp);
 
 #endif

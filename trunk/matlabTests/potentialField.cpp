@@ -43,8 +43,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   }
 
   //Allocate space for the answer
-  plhs[0] = mxCreateDoubleMatrix(rows,cols,mxREAL);
-  
+  plhs[0] = mxCreateDoubleMatrix(rows,cols,mxREAL);  
 
   //Populate the answer array with the value of the potential field
   double tmpPoint[2];

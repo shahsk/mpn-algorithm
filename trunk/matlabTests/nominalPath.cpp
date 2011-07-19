@@ -66,8 +66,12 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   double finalOri;
   nominalPath(*e,controlPath,nominal,start,startOri,dt,steps,finalOri);
 
+
   //Copy the answer into the matlab vectors for output
   for(int i(0); i<steps; i++){
+
+    //printf("nominal: %f,%f\n",nominal[i][0],nominal[i][1]);
+    
     mxGetPr(plhs[0])[i] = nominal[i][0];
     mxGetPr(plhs[1])[i] = nominal[i][1];
 
