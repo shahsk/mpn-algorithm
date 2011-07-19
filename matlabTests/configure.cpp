@@ -12,7 +12,7 @@
 using namespace libconfig;
 using namespace std;
 
-void configure(char file[],Environment * & e,MPNParams * & mp){
+void configure(const char * file,Environment * & e,MPNParams * & mp){
 
   Config c;
   c.readFile(file);
@@ -80,6 +80,5 @@ void configure(char file[],Environment * & e,MPNParams * & mp){
 }
 
 void configure(Environment * & e,MPNParams * & mp){
-  char filename[] = DEFAULTFILE;
-  configure(filename,e,mp);
+  configure(DEFAULTFILE,e,mp);
 }

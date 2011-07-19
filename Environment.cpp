@@ -34,6 +34,12 @@ Environment::Environment(double * destination,double k_in,double rad){
   radius = rad;
   for(int i(0); i<DIM; i++)
     goal[i] = destination[i];
+
+  vmax = .5;
+  vmin = 0;
+  omegamax = 3;
+  omegamin = 0;
+  
 }
 
 Environment::~Environment() {
@@ -82,6 +88,58 @@ void Environment::negatedGradient(double * q,double * answer){
 	}
 }
 
+void Environment::integrator(double * q,double * negGrad,double & currentOri, double dt, double * ans){
+
+  tmpSin = sin(currentOri);
+  tmpCos = cos(currentOri);
+
+  vdot = negGrad[0]*tmpCos + negGrad[1]*tmpSin;
+  v = sqrt(pow(negGrad[0],2) + pow(negGrad[1],2)) + vdot*dt;
+
+  if(!this->vset){
+    this->prevV = sqrt(gamma(negGrad));
+    this->vset = true;
+  }
+  v = this->prevV + vdot*dt;
+
+  
+  if(v > 0){
+    if(v > vmax)
+      v = vmax;
+    if(v < vmin)
+      v = vmin;
+  }
+  if(v < 0){
+    if(v < -vmax)
+      v = -vmax;
+    if(v > -vmin)
+      v = -vmin;
+  }
+  prevV = v;
+  omega = (negGrad[1]*tmpCos - negGrad[0]*tmpSin)/v;
+  
+  if(omega > 0){
+    if(omega > omegamax)
+      omega = omegamax;
+    if(omega < omegamin)
+      omega = omegamin;
+  }
+  if(omega < 0){
+    if(omega < -omegamax)
+      omega = -omegamax;
+    if(omega > -omegamin)
+      omega = -omegamin;
+  }
+  
+  ans[0] = q[0] + v*tmpCos*dt;
+  ans[1] = q[1] + v*tmpSin*dt;
+  currentOri = currentOri + omega*dt;
+
+
+  //ans[0] = q[0] + dt*negGrad[0];
+  //ans[1] = q[1] + dt*negGrad[1];
+} 
+
 
 DipolarEnvironment::DipolarEnvironment(double * destination,double k_in,
 				       double rad,double ep,double goalOri):
@@ -91,13 +149,8 @@ DipolarEnvironment::DipolarEnvironment(double * destination,double k_in,
   goalOrientation = goalOri;
   sinGoalOri = sin(goalOri);
   cosGoalOri = cos(goalOri);
-  
+  //vset = false;
 }
-
-void Environment::integrator(double * q,double * negGrad,double & currentOri, double dt, double * ans){
-  ans[0] = q[0] + dt*negGrad[0];
-  ans[1] = q[1] + dt*negGrad[1];
-} 
 
 void DipolarEnvironment::negatedGradient(double * q,double * answer){
 	double beta = calculateBeta(q); //calculate total beta, refresh values
@@ -151,10 +204,60 @@ double DipolarEnvironment::potentialField(double * q){
 }
 
 void DipolarEnvironment::integrator(double * q,double * negGrad,double & currentOri, double dt, double * ans){
+
+  //double vdot,v,omega,tmpSin,tmpCos;
+  //double vmax = .5,vmin = 0,omegamax = 3,omegamin = 0;
+  tmpSin = sin(currentOri);
+  tmpCos = cos(currentOri);
+
+  vdot = negGrad[0]*tmpCos + negGrad[1]*tmpSin;
+  v = sqrt(pow(negGrad[0],2) + pow(negGrad[1],2)) + vdot*dt;
+
+  if(!this->vset){
+    this->prevV = sqrt(gamma(negGrad));
+    this->vset = true;
+  }
+  v = this->prevV + vdot*dt;
+
+  
+  if(v > 0){
+    if(v > vmax)
+      v = vmax;
+    if(v < vmin)
+      v = vmin;
+  }
+  if(v < 0){
+    if(v < -vmax)
+      v = -vmax;
+    if(v > -vmin)
+      v = -vmin;
+  }
+  prevV = v;
+  omega = (negGrad[1]*tmpCos - negGrad[0]*tmpSin)/v;
+  
+  if(omega > 0){
+    if(omega > omegamax)
+      omega = omegamax;
+    if(omega < omegamin)
+      omega = omegamin;
+  }
+  if(omega < 0){
+    if(omega < -omegamax)
+      omega = -omegamax;
+    if(omega > -omegamin)
+      omega = -omegamin;
+  }
+  
+  ans[0] = q[0] + v*tmpCos*dt;
+  ans[1] = q[1] + v*tmpSin*dt;
+  currentOri = currentOri + omega*dt;
+  
+
+  /*
   double vel = negGrad[0]*cos(currentOri) + negGrad[1]*sin(currentOri);
   ans[0] = q[0] + vel*cos(currentOri)*dt;
   ans[1] = q[1] + vel*sin(currentOri)*dt;
   double omega = atan2(negGrad[1],negGrad[0]) - currentOri;
   currentOri += omega*dt;
-  
+  */
 }

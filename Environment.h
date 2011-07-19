@@ -21,7 +21,14 @@ class Environment {//assumed to be centered at 0,0
 
 
  public:
+  double prevV;
+  bool vset;
   
+  //Temporaries
+  double vdot,v,omega,tmpSin,tmpCos;
+  double vmax,vmin,omegamax,omegamin;
+
+
   double goal[DIM];
   std::vector<Obstacle> obstacles;
 
@@ -43,6 +50,9 @@ class Environment {//assumed to be centered at 0,0
 class DipolarEnvironment: public Environment{
  private:
   double epsilon,goalOrientation,sinGoalOri,cosGoalOri;
+
+
+
  public:
   DipolarEnvironment(double * destination,double k_in,double rad,
 		     double ep,double goalOri);

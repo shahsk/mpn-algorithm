@@ -311,6 +311,7 @@ void generateBestPath(Environment & e, MPNParams & params, double ** &bestPath, 
 
 //Puts the nominal controlPath and the path in the given pointers
 void nominalPath(Environment & e,double** controlPath, double ** path,double * start,double startOri, double dt, int steps,double & finalOri){
+  e.vset = false;
 	double * current = start;
 	finalOri = startOri;
 	for(int i(0); i<steps; i++){
@@ -326,7 +327,7 @@ void nominalPath(Environment & e,double** controlPath, double ** path,double * s
 
 //Puts a sample controlPath and path into the given variables, given a set of parameters
 void samplePath(Environment & e, MPNParams & params,double** controlPath, double ** path,double * start,double startOri, double dt, int steps,double & finalOri){
-
+  e.vset = false;
 	double * current = start,angPerturb,tmpSin,tmpCos;
 	double * currentGrad;
 	double currentPolyTime = params.currentTime/params.predictionHorizon;

@@ -25,11 +25,11 @@
 #define KDY 3
 
 #define VMAX .25
-#define VMIN .1
+#define VMIN 0
 #define OMEGAMAX .3
 #define OMEGAMIN 0
 
-#define POLYTIME 2*params->controlHorizon
+#define POLYTIME 3
 
 #define CMD_RATE .1
 
@@ -292,7 +292,7 @@ struct trajController{
 int main(){
   
   //Setup
-  char filename[] = "lab.cfg";
+  char filename[] = "matlabTests/default.cfg";//"lab.cfg";
   Environment * env;
   MPNParams * params;
   
