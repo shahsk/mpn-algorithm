@@ -1,8 +1,10 @@
-#include "matlabTests/configure.h"
 #include "alglib/interpolation.h"
 #include "MPN2D.h"
+#include "Integrator.h"
+#include "Build.h"
 #include "Environment.h"
 #include "Obstacle.h"
+#include "gamma.h"
 #include <math.h>
 #include <iostream>
 #include <libplayerc++/playerc++.h>
@@ -215,7 +217,7 @@ struct trajController{
     prevTime = startTime;
 
     bool first = true;
-    while(currTime - startTime < time && gamma(pose,goal) > tol*tol ){
+    while(currTime - startTime < time && gamma(pose,goal,2) > tol*tol ){
       dt = currTime - prevTime;
       //dt = CMD_RATE;
 
@@ -254,7 +256,7 @@ struct trajController{
       //std::cout << "u: " <<u[0] << "," << u[1] << std::endl;
 
       acc = u[0]*cos(pose[2]) + u[1]*sin(pose[2]);
-      v = sqrt(gamma(currVel)) + acc*dt;
+      v = sqrt(gamma(currVel,2)) + acc*dt;
       omega = (u[1]*cos(pose[2]) - u[0]*sin(pose[2]))/(v);
 
       //std::cout << currVel[0] << "," << currVel[1] << std::endl;
@@ -290,26 +292,27 @@ struct trajController{
 };
 
 int main(){
-  
+
   //Setup
-  char filename[] = "matlabTests/default.cfg";//"lab.cfg";
+  char filename[] = "lab.cfg";
   Environment * env;
   MPNParams * params;
-  
-  configure(filename,env,params);
+  Integrator * intgr;
+
+  buildAll(filename,env,intgr,params,PRECISION);
+  std::cout << "HERE\n";
 
   trajController robot;
 
-
   int steps,CHI,nextSteps,nextCHI; //CHI = Control Horizon Index
-  double startOri,finalOri,start[2],dt = PRECISION;//,time=params->controlHorizon;
+  double start[2],dt = PRECISION;//,time=params->controlHorizon;
   double time = POLYTIME;
   double ** bestPath,**bestControl,**nextPath,**nextControl;
 
   robot.client->Read();
   start[0] = robot.pos->GetXPos();
   start[1] = robot.pos->GetYPos();
-  startOri = robot.pos->GetYaw();
+  //startOri = robot.pos->GetYaw();
 
   alglib::barycentricinterpolant *currXPoly,*currYPoly,*nextXPoly,*nextYPoly,*tmp;
   currXPoly = new alglib::barycentricinterpolant();
@@ -317,15 +320,14 @@ int main(){
   nextXPoly = new alglib::barycentricinterpolant();
   nextYPoly = new alglib::barycentricinterpolant();
   
-  
   //Generate an initial path
-  generateBestPath(*env,*params,bestPath,bestControl,steps,CHI,start,startOri,dt,finalOri);
+  generateBestPath(env,params,intgr,bestPath,bestControl,steps,CHI,start);
   buildPolynoms(bestPath,bestControl,CHI,time,currXPoly,currYPoly);
 
-  std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI])) << std::endl;
+  std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI],2)) << std::endl;
 
   bool dummy = true;
-  while(gamma(start,env->goal) > TOLERANCE*TOLERANCE ){
+  while(gamma(start,env->goal,2) > TOLERANCE*TOLERANCE ){
 
     start[0] = bestPath[CHI][0];
     start[1] = bestPath[CHI][1];
@@ -339,8 +341,7 @@ int main(){
     boost::thread driveThread(robot,currXPoly,currYPoly,time,dummy);
     
     //Compute the next path
-    startOri = finalOri;
-    generateBestPath(*env,*params,nextPath,nextControl,nextSteps,nextCHI,start,startOri,dt,finalOri);
+    generateBestPath(env,params,intgr,nextPath,nextControl,nextSteps,nextCHI,start);
     buildPolynoms(nextPath,nextControl,nextCHI,time,nextXPoly,nextYPoly);
 
     //std::cout << "nominal final pos: " << nextPath[nextCHI][0] << "," << nextPath[nextCHI][1] << std::endl;
@@ -363,9 +364,9 @@ int main(){
     currYPoly = nextYPoly;
     nextYPoly = tmp;
     
-    //params->currentTime += params->controlHorizon;
-    //if(params->currentTime > params->predictionHorizon)
-    //  params->currentTime = 0;
+    params->currentTime += params->controlHorizon;
+    if(params->currentTime > params->predictionHorizon)
+      params->currentTime = 0;
 
     //Wait for robot to finish
     driveThread.join();
