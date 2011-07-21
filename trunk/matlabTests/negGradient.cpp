@@ -1,7 +1,9 @@
 #include "mex.h"
-#include "configure.h"
+#include "Build.h"
 #include "Environment.h"
+#include <string.h>
 
+#define DEFAULT_FILE "lab.cfg"
 
 /*
   Go-between from matlab to environment.negGradient for visualization
@@ -31,16 +33,15 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
 
   //Initialize environment
   Environment * e;
-  MPNParams * mp;
+  char filename[256];
   if(nrhs == 3){
-    char filename[256];
     mxGetString(prhs[2],filename,mxGetN(prhs[2])+1);
-    //mexPrintf(filename);
-    configure(filename,e,mp);
   }
   else{
-    configure(e,mp);
+    strcpy(filename,DEFAULT_FILE);
   }
+  
+  buildEnvironment(filename,e,2);
 
   //Allocate space for the answer
   plhs[0] = mxCreateDoubleMatrix(rows,cols,mxREAL);

@@ -1,7 +1,10 @@
 #include "mex.h"
-#include "configure.h"
+#include "Build.h"
 #include "Environment.h"
 #include "Obstacle.h"
+#include <string.h>
+
+#define DEFAULT_FILE "lab.cfg"
 
 /*
   Gets the obstacle positions out of the config file and into matlab
@@ -18,17 +21,16 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
 
   //Initialize environment
   Environment * e;
-  MPNParams * mp;
+  char filename[256];
   if(nrhs == 1){
-    char filename[256];
     mxGetString(prhs[0],filename,mxGetN(prhs[0])+1);
-    mexPrintf(filename);
-    configure(filename,e,mp);
   }
   else{
-    configure(e,mp);
+    strcpy(filename,DEFAULT_FILE);
   }
-  
+
+  buildEnvironment(filename,e,2);
+
   //Allocate space for the answer
   unsigned int nObs = e->obstacles.size();
   plhs[0] = mxCreateDoubleMatrix(1,nObs,mxREAL);
@@ -37,9 +39,9 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   
   //Populate the answer array with the positions/radii
   for(unsigned int i(0); i<nObs; i++ ){
-    mxGetPr(plhs[0])[i] = e->obstacles[i].pos[0];
-    mxGetPr(plhs[1])[i] = e->obstacles[i].pos[1];
-    mxGetPr(plhs[2])[i] = e->obstacles[i].radius;
+    mxGetPr(plhs[0])[i] = e->obstacles[i]->pos[0];
+    mxGetPr(plhs[1])[i] = e->obstacles[i]->pos[1];
+    mxGetPr(plhs[2])[i] = e->obstacles[i]->radius;
   }
 
 }
