@@ -1,14 +1,15 @@
 #include "mex.h"
 #include "Environment.h"
 #include "MPN2D.h"
-#include "configure.h"
+#include "Build.h"
+#include <string.h>
 #include <iostream>
 
+#define DEFAULT_FILE "lab.cfg"
 /*
   Go-between from matlab to MPN2D::nominalPath for visualization
 
-  Input arguments: [x,y,(optional theta)] start, precision(dt), steps, 
-  (optional filename)
+  Input arguments: [x,y] start, precision(dt), steps, (optional filename)
   Output arguments: row vector of x values, row vector of y values (optional 
   row vector of dx values, row vector of dy values)
 
@@ -25,33 +26,28 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
     mexErrMsgTxt("Incorrect number of output arguments");
 
   //Get start position and check for correct dimensions
-  if(mxGetM(prhs[0]) != 1 || !(mxGetN(prhs[0]) == 2 || mxGetN(prhs[0]) == 3))
-    mexErrMsgTxt("Start position must be in [x,y,theta] form");
+  if(mxGetM(prhs[0]) != 1 || !(mxGetN(prhs[0]) == 2 ))
+    mexErrMsgTxt("Start position must be in [x,y] form");
   double start[2] = {mxGetPr(prhs[0])[0],mxGetPr(prhs[0])[1]};
-  double startOri;
-
-  if(mxGetN(prhs[0]) == 3)
-    startOri = mxGetPr(prhs[0])[2];
-  else
-    startOri = 0;
 
   //Get precision, steps
   double dt = *mxGetPr(prhs[1]);
   unsigned int steps = static_cast<int>(*mxGetPr(prhs[2]));
 
   //Initialize environment
-  MPNParams * mp;
   Environment * e;
+  Integrator * intgr;
+  char filename[256];
   if(nrhs == 4){
-    char filename[256];
     mxGetString(prhs[3],filename,mxGetN(prhs[3])+1);
-    //mexPrintf(filename);
-    configure(filename,e,mp);
   }
   else{
-    configure(e,mp);
+    strcpy(filename,DEFAULT_FILE);
   }
 
+  buildEnvironment(filename,e,2);
+  buildIntegrator(filename,intgr,2,dt);
+  
   //Allocate space for the answer
   plhs[0] = mxCreateDoubleMatrix(1,steps,mxREAL);
   plhs[1] = mxCreateDoubleMatrix(1,steps,mxREAL);
@@ -63,8 +59,8 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   //Calculate the nominal path
   double ** nominal = allocatePoints(steps);
   double ** controlPath = allocatePoints(steps);
-  double finalOri;
-  nominalPath(*e,controlPath,nominal,start,startOri,dt,steps,finalOri);
+
+  nominalPath(e,intgr,controlPath,nominal,start,steps);
 
 
   //Copy the answer into the matlab vectors for output

@@ -1,14 +1,18 @@
 #include "mex.h"
 #include "Environment.h"
 #include "MPN2D.h"
-#include "configure.h"
+#include "Integrator.h"
+#include "Build.h"
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
+
+#define DEFAULT_FILE "lab.cfg"
 
 /*
   Go-between from matlab to MPN2D::generateBestPath for visualization
 
-  Input arguments: [x,y,(theta)] start, precision(dt), (optional currentTime,filename)
+  Input arguments: [x,y] start, precision(dt), (optional currentTime,filename)
   Output arguments: row vector of x values, row vector of y values, control 
   horizon index, (optional dx, dy)
 
@@ -25,8 +29,8 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
     mexErrMsgTxt("Incorrect number of output arguments");
 
   //Get start position and check for correct dimensions
-  if(mxGetM(prhs[0]) != 1 || !(mxGetN(prhs[0]) == 2 || mxGetN(prhs[0]) == 3 ))
-    mexErrMsgTxt("Start position must be in [x,y,theta] form");
+  if(mxGetM(prhs[0]) != 1 || !mxGetN(prhs[0]) == 2 )
+    mexErrMsgTxt("Start position must be in [x,y] form");
 
   double start[2] = {mxGetPr(prhs[0])[0],mxGetPr(prhs[0])[1]};
   double startOri;
@@ -42,16 +46,16 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   //Initialize environment
   Environment * e;
   MPNParams * mp;
+  Integrator * intgr;
+  char filename[256];
   if(nrhs == 4){
-    char filename[256];
     mxGetString(prhs[3],filename,mxGetN(prhs[3])+1);
-    //mexPrintf(filename);
-    configure(filename,e,mp);
   }
   else{
-    configure(e,mp);
+    strcpy(filename,DEFAULT_FILE);
   }
-  
+  buildAll(filename,e,intgr,mp,dt);
+
   //Adjust current time if necessary
   if(nrhs == 3 || nrhs == 4)
     mp->currentTime = *mxGetPr(prhs[2]);
@@ -60,7 +64,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   srand(time(NULL));
   double ** path, ** control,finalOri;
   int steps,controlIndex;
-  generateBestPath(*e,*mp,path,control,steps,controlIndex,start,startOri,dt,finalOri);
+  generateBestPath(e,mp,intgr,path,control,steps,controlIndex,start);
 
   //Allocate space for the answer
   plhs[0] = mxCreateDoubleMatrix(1,steps,mxREAL);
