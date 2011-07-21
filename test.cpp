@@ -10,6 +10,7 @@
 #include <libplayerc++/playerc++.h>
 #include <iostream>
 #include <time.h>
+#include <libconfig.h++>
 
 #include <boost/thread.hpp>
 
@@ -18,22 +19,23 @@
 
 #define TOLERANCE .1
 #define PRECISION .01
-#define DEGREE 4
+#define DEGREE 10
 
 //Controller proportions
 #define KPX 1
-#define KDX 3
+#define KDX 1
 #define KPY 1
-#define KDY 3
+#define KDY 1
 
+//-1 means unconstrained
 #define VMAX .25
-#define VMIN 0
-#define OMEGAMAX .3
+#define VMIN .1
+#define OMEGAMAX 1
 #define OMEGAMIN 0
 
-#define POLYTIME 3
+#define POLYTIME params->controlHorizon;
 
-#define CMD_RATE .1
+#define CMD_RATE .3
 
 using namespace PlayerCc;
 
@@ -57,7 +59,6 @@ double saturate(double val, double min, double max){
   }
 
 }
-
 
 double satv(double v){return saturate(v,VMIN,VMAX); }
 double satw(double w){return saturate(w,OMEGAMIN,OMEGAMAX); }
@@ -180,6 +181,7 @@ alglib::barycentricfitfloaterhormannwc(
 struct trajController{
   PlayerClient * client;
   Position2dProxy * pos;
+  double endGoal[2];
 
   double goal[2],pose[3],currVel[2],tol,desiredV[2],desiredX[2],desiredA[2],u[2],v,omega,acc,dt;
   int steps;
@@ -188,7 +190,10 @@ struct trajController{
   double startTime,currTime,prevTime;
 
   double prevVel,prevOmega;
-  trajController(){
+  trajController(double * endGoal){
+    this->endGoal[0] = endGoal[0];
+    this->endGoal[1] = endGoal[1];
+
     client = new PlayerClient(ROBOTIP,ROBOTPORT);
     pos = new Position2dProxy(client,0);
     tol = TOLERANCE;
@@ -204,7 +209,7 @@ struct trajController{
 		  alglib::barycentricinterpolant * ypath,
 		  double time,bool correct){
 
-    //std::cout << "path = [";
+    std::cout << "path = [";
     goal[0] = barycentriccalc(*xpath,time);
     goal[1] = barycentriccalc(*ypath,time);
 
@@ -217,14 +222,14 @@ struct trajController{
     prevTime = startTime;
 
     bool first = true;
-    while(currTime - startTime < time && gamma(pose,goal,2) > tol*tol ){
+    while(currTime - startTime < time && gamma(pose,goal,2) > tol*tol){
       dt = currTime - prevTime;
       //dt = CMD_RATE;
 
       barycentricdiff2(*xpath,currTime-startTime,desiredX[0],desiredV[0],desiredA[0]);
       barycentricdiff2(*ypath,currTime-startTime,desiredX[1],desiredV[1],desiredA[1]);
       
-      //std::cout << desiredX[0] << "," << desiredX[1] << "," << currTime-startTime << ";";
+      std::cout << desiredX[0] << "," << desiredX[1] << "," << currTime-startTime << ";";
 
       //std::cout << "desired x: " << desiredX[0] << " desired y: " << desiredX[1] << std::endl;
     
@@ -232,6 +237,11 @@ struct trajController{
       pose[0] = pos->GetXPos();
       pose[1] = pos->GetYPos();
       pose[2] = pos->GetYaw();
+
+      if(gamma(pose,endGoal,2) < tol*tol){
+	pos->SetSpeed(0,0);
+	break;
+      }
 
       if(correct && first){
 	//std::cout << "HEREHEREHEREHERE\n";
@@ -263,16 +273,16 @@ struct trajController{
       //std::cout << sin(pose[2]) << std::endl;
 
 
-      v = satv(v);
-      omega = satw(omega);
+      //v = satv(v);
+      //omega = satw(omega);
     
       pos->SetSpeed(v,omega);
 
-      std::cout << "vel: " << v << " omega: " << omega << std::endl;    
+      //std::cout << "vel: " << v << " omega: " << omega << std::endl;    
 
       prevTime = currTime;
       do{
-	usleep(100);
+	usleep(200);
 	gettimeofday(&now,NULL);
 	currTime = now.tv_sec + now.tv_usec/1000000.;
       }while(currTime-prevTime < CMD_RATE);
@@ -285,8 +295,8 @@ struct trajController{
     
 
     //std::cout << "DONE!\n";
-    std::cout << "Time used: " << currTime - startTime << std::endl;
-    //std::cout << "];\n";
+    //std::cout << "Time used: " << currTime - startTime << std::endl;
+    std::cout << "];\n";
   }
 
 };
@@ -299,10 +309,15 @@ int main(){
   MPNParams * params;
   Integrator * intgr;
 
-  buildAll(filename,env,intgr,params,PRECISION);
-  std::cout << "HERE\n";
+  libconfig::Config c;
+  c.readFile(filename);
 
-  trajController robot;
+  buildEnvironment(&c,env,2);
+  buildMPNParams(&c,params);
+
+  //std::cout << "goal: " << env->goal[0] << "," << env->goal[1] << std::endl;
+
+  trajController robot(env->goal);
 
   int steps,CHI,nextSteps,nextCHI; //CHI = Control Horizon Index
   double start[2],dt = PRECISION;//,time=params->controlHorizon;
@@ -312,7 +327,8 @@ int main(){
   robot.client->Read();
   start[0] = robot.pos->GetXPos();
   start[1] = robot.pos->GetYPos();
-  //startOri = robot.pos->GetYaw();
+
+  intgr = new Unicycle(dt,robot.pos->GetYaw(),VMAX,OMEGAMAX,VMIN,-1);
 
   alglib::barycentricinterpolant *currXPoly,*currYPoly,*nextXPoly,*nextYPoly,*tmp;
   currXPoly = new alglib::barycentricinterpolant();
@@ -324,10 +340,11 @@ int main(){
   generateBestPath(env,params,intgr,bestPath,bestControl,steps,CHI,start);
   buildPolynoms(bestPath,bestControl,CHI,time,currXPoly,currYPoly);
 
-  std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI],2)) << std::endl;
+  //std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI],2)) << std::endl;
 
   bool dummy = true;
-  while(gamma(start,env->goal,2) > TOLERANCE*TOLERANCE ){
+  double realPos[2] = {start[0],start[1]};
+  while(gamma(realPos,env->goal,2) > TOLERANCE*TOLERANCE ){
 
     start[0] = bestPath[CHI][0];
     start[1] = bestPath[CHI][1];
@@ -338,6 +355,7 @@ int main(){
     //std::cout << start[0] << "," << start[1] << std::endl;
     
     //Start driving along the path
+
     boost::thread driveThread(robot,currXPoly,currYPoly,time,dummy);
     
     //Compute the next path
@@ -345,7 +363,7 @@ int main(){
     buildPolynoms(nextPath,nextControl,nextCHI,time,nextXPoly,nextYPoly);
 
     //std::cout << "nominal final pos: " << nextPath[nextCHI][0] << "," << nextPath[nextCHI][1] << std::endl;
-    //std::cout << "displacement: " << sqrt(gamma(nextPath[0],nextPath[nextCHI])) << std::endl;
+    //std::cout << "displacement: " << sqrt(gamma(nextPath[0],nextPath[nextCHI],2)) << std::endl;
 
     //Set up for next iteration
     cleanupPoints(bestPath,steps);
@@ -370,8 +388,10 @@ int main(){
 
     //Wait for robot to finish
     driveThread.join();
-    dummy = false;
+    realPos[0] = robot.pos->GetXPos();
+    realPos[1] = robot.pos->GetYPos();
 
+    dummy = false;
   }  
 
   robot.pos->SetSpeed(0,0);

@@ -59,7 +59,7 @@ Environment::Environment(libconfig::Setting & group,unsigned int dim){
     double tmpPos[this->dim],tmpR;
     for(unsigned int i(0); i<group["obstacles"].getLength(); i++){
       for(unsigned int j(0); j<this->dim; j++){
-	tmpPos[1] = group["obstacles"][i]["position"][j];
+	tmpPos[j] = group["obstacles"][i]["position"][j];
       }
       tmpR = group["obstacles"][i]["radius"];
       this->obstacles.push_back(new Obstacle(tmpPos,tmpR));
@@ -84,11 +84,11 @@ void Environment::negatedGradient(double * q,double * answer){
 	double beta = calculateBeta(q); //calculate total beta, refresh values
 
 	//Only happens when inside an obstacle
-	//if(beta < 0){
-	//  answer[0] = 0;
-	//  answer[1] = 0;
-	//  return;
-	//}
+	if(beta < 0){
+	  answer[0] = 0;
+	  answer[1] = 0;
+	  return;
+	}
 
 	double gam = gamma(q,goal,this->dim);
 	double gamPowK = pow(gam,k);
