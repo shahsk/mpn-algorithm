@@ -23,12 +23,12 @@
 
 //Controller proportions
 #define KPX 1
-#define KDX 1
+#define KDX 2
 #define KPY 1
-#define KDY 1
+#define KDY 2
 
 //-1 means unconstrained
-#define VMAX .25
+#define VMAX .3
 #define VMIN .1
 #define OMEGAMAX 1
 #define OMEGAMIN 0
@@ -209,7 +209,7 @@ struct trajController{
 		  alglib::barycentricinterpolant * ypath,
 		  double time,bool correct){
 
-    std::cout << "path = [";
+    //std::cout << "path = [";
     goal[0] = barycentriccalc(*xpath,time);
     goal[1] = barycentriccalc(*ypath,time);
 
@@ -229,7 +229,7 @@ struct trajController{
       barycentricdiff2(*xpath,currTime-startTime,desiredX[0],desiredV[0],desiredA[0]);
       barycentricdiff2(*ypath,currTime-startTime,desiredX[1],desiredV[1],desiredA[1]);
       
-      std::cout << desiredX[0] << "," << desiredX[1] << "," << currTime-startTime << ";";
+      //std::cout << desiredX[0] << "," << desiredX[1] << "," << currTime-startTime << ";";
 
       //std::cout << "desired x: " << desiredX[0] << " desired y: " << desiredX[1] << std::endl;
     
@@ -273,8 +273,8 @@ struct trajController{
       //std::cout << sin(pose[2]) << std::endl;
 
 
-      //v = satv(v);
-      //omega = satw(omega);
+      v = satv(v);
+      omega = satw(omega);
     
       pos->SetSpeed(v,omega);
 
@@ -295,8 +295,8 @@ struct trajController{
     
 
     //std::cout << "DONE!\n";
-    //std::cout << "Time used: " << currTime - startTime << std::endl;
-    std::cout << "];\n";
+    std::cout << "Time used: " << currTime - startTime << std::endl;
+    //std::cout << "];\n";
   }
 
 };
@@ -340,7 +340,7 @@ int main(){
   generateBestPath(env,params,intgr,bestPath,bestControl,steps,CHI,start);
   buildPolynoms(bestPath,bestControl,CHI,time,currXPoly,currYPoly);
 
-  //std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI],2)) << std::endl;
+  std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI],2)) << std::endl;
 
   bool dummy = true;
   double realPos[2] = {start[0],start[1]};
@@ -357,13 +357,13 @@ int main(){
     //Start driving along the path
 
     boost::thread driveThread(robot,currXPoly,currYPoly,time,dummy);
-    
+
     //Compute the next path
     generateBestPath(env,params,intgr,nextPath,nextControl,nextSteps,nextCHI,start);
     buildPolynoms(nextPath,nextControl,nextCHI,time,nextXPoly,nextYPoly);
 
-    //std::cout << "nominal final pos: " << nextPath[nextCHI][0] << "," << nextPath[nextCHI][1] << std::endl;
-    //std::cout << "displacement: " << sqrt(gamma(nextPath[0],nextPath[nextCHI],2)) << std::endl;
+    std::cout << "nominal final pos: " << nextPath[nextCHI][0] << "," << nextPath[nextCHI][1] << std::endl;
+    std::cout << "displacement: " << sqrt(gamma(nextPath[0],nextPath[nextCHI],2)) << std::endl;
 
     //Set up for next iteration
     cleanupPoints(bestPath,steps);
