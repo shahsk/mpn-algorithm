@@ -47,33 +47,21 @@ double Unicycle::sign(double num){
 void Unicycle::satv(double * v){this->saturate(v,this->vmax,this->vmin);}
 void Unicycle::satw(double * w){this->saturate(w,this->omegamax,this->omegamin);};
 void Unicycle::saturate(double * val,double upper,double lower){
-  //Only saturate if upper > lower and at least one of upper,lower is > -1
-  if(upper < lower || upper < 0 || lower < 0)
-    return;
-
-  if(fabs(*val) > upper && upper > 0)
-    *val = upper*this->sign(*val);
-  else if(fabs(*val) < lower && lower > 0)
-    *val = lower*sign(*val);
+  if(fabs(*val) > upper && upper > 0){
+    *val = this->sign(*val)*upper;
+  }
+  else if(*val < lower && lower > 0){
+    *val = this->sign(*val)*lower;
+  }
 
 }
 
 //Force theta into the +/- pi range
 void Unicycle::normalizeTheta(double * theta){
-  if(fabs(*theta) <= M_PI)
-    return;
-
-  if(*theta > 0){
-    while(*theta > M_PI)
-      *theta -= M_PI;
-    return;
-  }
-
-  if(*theta < 0){
-    while(*theta < -M_PI)
-      *theta += M_PI;
-    return;
-  }
+  if(*theta < 0)
+    *theta += 2*M_PI;
+  while(*theta > 2*M_PI)
+    *theta -= 2*M_PI;
 } 
 
 void Unicycle::step(double * wsState,double * wsGrad,double * wsNewState){
@@ -83,10 +71,17 @@ void Unicycle::step(double * wsState,double * wsGrad,double * wsNewState){
 
   this->v = sqrt(pow(wsGrad[0],2) + pow(wsGrad[1],2));
   
+
+  double tmp = atan2(wsGrad[1],wsGrad[0]);
+  if(tmp < 0)
+    tmp += 2*M_PI;
+  if(this->currTheta < 0)
+    this->currTheta += 2*M_PI;
+
+  this->omega = (tmp-this->currTheta)/this->dt;
+
   //Saturate v
   this->satv(&this->v);
-
-  this->omega = (atan2(wsGrad[1],wsGrad[0]) - this->currTheta)/this->dt;
 
   //Saturate omega
   this->satw(&this->omega);
@@ -95,7 +90,7 @@ void Unicycle::step(double * wsState,double * wsGrad,double * wsNewState){
   wsNewState[0] = wsState[0] + this->v*this->tmpCos*this->dt;
   wsNewState[1] = wsState[1] + this->v*this->tmpSin*this->dt;
   this->currTheta += this->omega*dt;
-
+  this->normalizeTheta(&this->currTheta);
 }
 
 void Unicycle::saveState(){
