@@ -23,6 +23,7 @@ class Integrator{
   //Save the current state of the integrator as the start state
   virtual void saveState();
 
+  virtual Integrator * copy();
 };
 
 #endif

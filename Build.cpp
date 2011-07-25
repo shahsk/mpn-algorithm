@@ -84,6 +84,7 @@ void buildMPNParams(Config * cfg,MPNParams * & mp){
     mp = new MPNParams;
     Setting & group = cfg->lookup(MPN_PARAMETERS);
     mp->wsDim = group["dimension"];
+    mp->tolerance = group["tolerance"];
     mp->nLegendrePolys = group["num_legendre_polys"];
     mp->confidence = group["confidence"];
     mp->level = group["level"];

@@ -7,11 +7,14 @@
 
 #include "MPN2D.h"
 #include "Integrator.h"
+#include "Unicycle.h"
 #include "Environment.h"
 #include "specialfunctions.h"
 #include "gamma.h"
 #include <cmath>
 #include <iostream>
+
+#define MAX_TRIES 100
 
 double noExtraCost(Environment * e,double * state){return 0.;}
 
@@ -48,6 +51,7 @@ double terminalCost(Environment * e,double ** path,int size){
 }
 
 //Size should be the actual size of path and controlPath
+//TODO: Terminal cost should have a different weight as well
 double incrementalCost(Environment * e, MPNParams * params,double ** path, double ** controlPath, double dt, int size, double(*extraCost)(Environment *,double *)){
 
 	//compute the value of the cost function at every point
@@ -68,21 +72,37 @@ double incrementalCost(Environment * e, MPNParams * params,double ** path, doubl
 }
 
 //Puts the nominal controlPath and the path in the given pointers
-void nominalPath(Environment * e,Integrator * intgr,double** controlPath, double ** path,double * start,int steps){
+int nominalPath(Environment * e,Integrator * intgr,double** controlPath, double ** path,double * start,int steps,Integrator * & atCHI,MPNParams * params){
   double * current = start;
+  int CHI = -1;
+  if(params != NULL){
+    CHI = ceil(static_cast<double>(params->controlHorizon/intgr->getDt()));
+  }
+
   for(int i(0); i<steps; i++){
     e->negatedGradient(current,controlPath[i]);
     intgr->step(current,controlPath[i],path[i]);
     current = path[i];
+    if(params != NULL){
+      if(gamma(e->goal,current,DIM) < pow(params->tolerance,2)){
+	atCHI = intgr->copy();
+	return i;
+      }
+      if(i == CHI){
+	atCHI = intgr->copy();
+      }
+    }
   }
+  return steps;
 }
 
 //Puts a sample controlPath and path into the given variables, given a set of parameters
-void samplePath(Environment * e, Integrator * intgr,MPNParams * params,double** controlPath, double ** path,double * start,int steps){
+int samplePath(Environment * e, Integrator * intgr,MPNParams * params,double** controlPath, double ** path,double * start,int steps,Integrator * & atCHI){
   double * current = start,angPerturb,tmpSin,tmpCos;
   double * currentGrad;
   double currentPolyTime = params->currentTime/params->predictionHorizon;
   double polyDt = intgr->getDt()/params->predictionHorizon;
+  int CHI = ceil(static_cast<double>(params->controlHorizon/intgr->getDt()));
 
   for(int i(0); i<steps; i++){
     
@@ -105,14 +125,23 @@ void samplePath(Environment * e, Integrator * intgr,MPNParams * params,double** 
 
     intgr->step(current,currentGrad,path[i]);
     current = path[i];
-    
+    if(gamma(path[i],e->goal,DIM) < pow(params->tolerance,2)){
+      atCHI = intgr->copy();
+      atCHI->saveState();
+      return i;
+    }
+    if(i==CHI){
+      atCHI = intgr->copy();
+      atCHI->saveState();
+    }
     //std::cout << current[0] << "," << current[1] << std::endl;
   }
+  return steps;
 }
 
 //TODO: Should also save the state of the integrator and return it
 //TODO: Put in a tolerance for the end condition
-void generateBestPath(Environment * e, MPNParams * params, Integrator * intgr, double ** &bestPath, double **& bestControl, int & steps, int & controlHorizonIndex,  double * start){
+bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, double ** &bestPath, double **& bestControl, int & steps, int & controlHorizonIndex,double * start){
   
   //ln(a) = log(a)/log(e) -> ln(a)/ln(b) = log(a)/log(b)
   double nSamples = log(1/(params->confidence))/log(1/(1-params->level));
@@ -121,19 +150,16 @@ void generateBestPath(Environment * e, MPNParams * params, Integrator * intgr, d
   controlHorizonIndex = ceil(static_cast<double>(params->controlHorizon/
 						 intgr->getDt()));
   
-  if(steps < 1)
-    steps = 1;
-  if(controlHorizonIndex > steps)
-    controlHorizonIndex = steps-1;
-  
   double startCost = e->potentialField(start);
   
   double ** nominal = allocatePoints(steps);
   double ** nominalControl = allocatePoints(steps);
-  nominalPath(e,intgr,nominalControl,nominal,start,steps);  
+  Integrator * optimalEndIntegrator,* tempPtr;
+  int bestSteps=nominalPath(e,intgr,nominalControl,nominal,start,steps,tempPtr,params);
+  optimalEndIntegrator = tempPtr->copy();
+  int bestCHI=bestSteps < controlHorizonIndex ? bestSteps : controlHorizonIndex;
 
   //initialize with nominal values
-  Integrator * optimalEndIntegrator = new Integrator(*intgr);
   double ** optimalPath = allocatePoints(steps);
   for(int i(0); i<steps; i++){
     optimalPath[i][0] = nominal[i][0];
@@ -155,10 +181,11 @@ void generateBestPath(Environment * e, MPNParams * params, Integrator * intgr, d
   for(unsigned int i(0); i<params->nLegendrePolys;i++){optimalParams[i]=0;}
   
   double currentCost,currentTerminal,currentControlHorizonCost,currentFinalOri;
+  int currSteps,currCHI;
   double ** currentPath = allocatePoints(steps);
   double ** currentControlPath = allocatePoints(steps);
   
-  int acceptedSoFar = 1;
+  int acceptedSoFar = 1,tries = 0;
   do{
     intgr->reset();
     //generate control inputs on +/- 1/(number of inputs)
@@ -166,28 +193,31 @@ void generateBestPath(Environment * e, MPNParams * params, Integrator * intgr, d
       params->controlParameters[i] = (static_cast<double>(rand() - rand())/RAND_MAX)/static_cast<double>(params->nLegendrePolys);
     }
     
-    samplePath(e,intgr,params,currentControlPath,currentPath,start,steps);
-    currentControlHorizonCost = terminalCost(e,currentPath,controlHorizonIndex);
+    currSteps=samplePath(e,intgr,params,currentControlPath,currentPath,start,steps,tempPtr);
+    currCHI=currSteps < controlHorizonIndex ? currSteps : controlHorizonIndex;
+    currentControlHorizonCost = terminalCost(e,currentPath,currCHI);
     
     //If we made progress toward the goal, count this path
     if(currentControlHorizonCost < startCost){
-      currentTerminal = terminalCost(e,currentPath,steps);
+      currentTerminal = terminalCost(e,currentPath,currSteps);
       
       //Only calculate incremental cost if there is a chance this path is 
       //optimal
       if(currentTerminal < optimalCost){
-	currentCost = currentTerminal + incrementalCost(e,params,currentPath,currentControlPath,intgr->getDt(),steps);
+	currentCost = currentTerminal + incrementalCost(e,params,currentPath,currentControlPath,intgr->getDt(),currSteps);
 	acceptedSoFar++;
 	//If we found a better path, save it
 	if(currentCost < optimalCost){
+	  bestSteps = currSteps;
+	  bestCHI = currCHI;
 	  optimalCost = currentCost;
 	  //Copy values into optimalPath
-	  for(int i(0); i<steps; i++){
+	  for(int i(0); i<currSteps; i++){
 	    optimalPath[i][0] = currentPath[i][0];
 	    optimalPath[i][1] = currentPath[i][1];
 	  }
 	  //Copy values into optimalControl
-	  for(int i(0); i<steps; i++){
+	  for(int i(0); i<currSteps; i++){
 	    optimalControl[i][0] = currentControlPath[i][0];
 	    optimalControl[i][1] = currentControlPath[i][1];
 	  }
@@ -196,25 +226,39 @@ void generateBestPath(Environment * e, MPNParams * params, Integrator * intgr, d
 	    optimalParams[i] = params->controlParameters[i];
 	  }
 	  //Copy Integrator end state into optimalEndIntegrator
-	  *optimalEndIntegrator = *intgr;
+	  //optimalEndIntegrator = *intgr;
+	  delete optimalEndIntegrator;
+	  //optimalEndIntegrator = intgr->copy();
+	  optimalEndIntegrator = tempPtr->copy();
+	  //memcpy(&optimalEndIntegrator,intgr,sizeof(Unicycle));
 	}
       }
     }
-    
-  }while(acceptedSoFar < nSamples);
+    tries++;
+  }while(acceptedSoFar <= nSamples && tries < MAX_TRIES);
+  //std::cout << "Tries: " << tries << std::endl;
+  //std::cout << "Accepted so far: " << acceptedSoFar << std::endl;
   
   bestPath = optimalPath;
   bestControl = optimalControl;
+  for(int i(bestSteps+1); i<steps; i++ ){
+    delete [] bestPath[i];
+    delete [] bestControl[i];
+  }
+  steps = bestSteps;
+
+  bool arrived = bestCHI < controlHorizonIndex;
+  controlHorizonIndex = bestCHI;
   for(unsigned int i(0); i<params->nLegendrePolys; i++){
     params->controlParameters[i] = optimalParams[i];
   }
 
-  *intgr = *optimalEndIntegrator;
-  intgr->saveState();
+  intgr = optimalEndIntegrator;
 
   cleanupPoints(nominal,steps);
   cleanupPoints(currentPath,steps);
   cleanupPoints(nominalControl,steps);
   cleanupPoints(currentControlPath,steps);
-  delete optimalEndIntegrator;
+
+  return arrived;
 }

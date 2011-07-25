@@ -10,6 +10,7 @@
   {
     #Required
     dimension = 2;
+    tolerance = .1;
     num_legendre_polys = 5;
     confidence = .05;
     level = .05;
@@ -29,6 +30,7 @@ struct MPNParams{
   double * controlParameters;
   double confidence,level,predictionHorizon,controlHorizon,currentTime;
   double costWeights[3];
+  double tolerance;
 };
 
 #endif

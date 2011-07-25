@@ -17,3 +17,7 @@ void Integrator::step(double * wsState,double * wsGrad,double * wsNewState){
 void Integrator::reset(){}
 
 void Integrator::saveState(){}
+
+Integrator* Integrator::copy(){
+  return new Integrator(this->dt,this->wsDim);
+}
