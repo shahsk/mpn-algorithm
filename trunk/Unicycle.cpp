@@ -1,6 +1,6 @@
-
 #include "Unicycle.h"
 #include "math.h"
+#include <iostream>
 
 Unicycle::Unicycle(double stepTime,double theta,double vmax,double omegamax,
 		   double vmin,double omegamin): Integrator(stepTime,2){
@@ -11,7 +11,9 @@ Unicycle::Unicycle(double stepTime,double theta,double vmax,double omegamax,
   this->omegamin = omegamin;
 
   this->currTheta = theta;
-
+  this->dirVector[0] = cos(this->currTheta);
+  this->dirVector[1] = sin(this->currTheta);
+  
 }
 
 Unicycle::Unicycle(libconfig::Setting& group,double stepTime,unsigned int dim):
@@ -19,6 +21,9 @@ Unicycle::Unicycle(libconfig::Setting& group,double stepTime,unsigned int dim):
   
   this->startTheta = group["start_orientation"];
   this->currTheta = this->startTheta;
+  
+  this->dirVector[0] = cos(this->currTheta);
+  this->dirVector[1] = sin(this->currTheta);
 
   this->vmax = -1;
   this->vmin = -1;
@@ -58,41 +63,43 @@ void Unicycle::saturate(double * val,double upper,double lower){
 
 //Force theta into the +/- pi range
 void Unicycle::normalizeTheta(double * theta){
+  if(*theta > 2*M_PI)
+    *theta -= 2*M_PI;
   if(*theta < 0)
     *theta += 2*M_PI;
-  while(*theta > 2*M_PI)
-    *theta -= 2*M_PI;
 } 
 
 void Unicycle::step(double * wsState,double * wsGrad,double * wsNewState){
 
-  this->tmpSin = sin(this->currTheta);
-  this->tmpCos = cos(this->currTheta);
+  this->normalizeTheta(&this->currTheta);
+  double desired = atan2(wsGrad[1],wsGrad[0]);
+  this->normalizeTheta(&desired);  
+
+  double difference = desired - this->currTheta;
+  if(difference > M_PI)
+    difference -= 2*M_PI;
+  else if(difference < -M_PI)
+    difference += 2*M_PI;
+
+  this->omega = difference/this->dt;
+  this->satw(&this->omega);
 
   this->v = sqrt(pow(wsGrad[0],2) + pow(wsGrad[1],2));
-  
-
-  double tmp = atan2(wsGrad[1],wsGrad[0]);
-  if(tmp < 0)
-    tmp += 2*M_PI;
-  if(this->currTheta < 0)
-    this->currTheta += 2*M_PI;
-
-  this->omega = (tmp-this->currTheta)/this->dt;
-
-  //Saturate v
   this->satv(&this->v);
 
-  //Saturate omega
-  this->satw(&this->omega);
+  this->currTheta += this->omega*this->dt;  
+  wsNewState[0] = wsState[0] + this->v*cos(this->currTheta)*this->dt;
+  wsNewState[1] = wsState[1] + this->v*sin(this->currTheta)*this->dt;
   
-  //Integrate
-  wsNewState[0] = wsState[0] + this->v*this->tmpCos*this->dt;
-  wsNewState[1] = wsState[1] + this->v*this->tmpSin*this->dt;
-  this->currTheta += this->omega*dt;
-  this->normalizeTheta(&this->currTheta);
 }
 
 void Unicycle::saveState(){
   this->startTheta = this->currTheta;
+}
+
+Integrator * Unicycle::copy(){
+  Unicycle * out = new Unicycle(this->dt,this->startTheta,this->vmax,
+				this->omegamax,this->vmin,this->omegamin);
+  out->currTheta = this->currTheta;
+  return out;  
 }

@@ -36,12 +36,12 @@
 */
 class Unicycle: public Integrator{
  protected:
-  double startTheta;
+
 
   //Constraints
   double vmax,vmin,omegamax,omegamin;
 
-  double currTheta;
+  double dirVector[2];
 
   //Temporaries
   double vdot,v,omega,tmpSin,tmpCos;
@@ -53,6 +53,8 @@ class Unicycle: public Integrator{
   void normalizeTheta(double * theta); 
 
  public:
+  double startTheta;
+  double currTheta;
   Unicycle(double stepTime,double theta, double vmax = -1,double omegamax = -1,
 	   double vmin = -1,double omegamin = -1);
   //Dim is ignored, Unicycle is 2D only
@@ -66,6 +68,8 @@ class Unicycle: public Integrator{
 
   //Save the current internal state as the initial state
   void saveState();
+
+  Integrator * copy();
 };
 
 #endif

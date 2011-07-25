@@ -1,3 +1,4 @@
+
 #include "alglib/interpolation.h"
 #include "MPN2D.h"
 #include "Integrator.h"
@@ -11,13 +12,15 @@
 #include <iostream>
 #include <time.h>
 #include <libconfig.h++>
+#include <string>
 
+#include "vicon_multi.hh"
 #include <boost/thread.hpp>
 
-#define ROBOTIP "localhost"//"192.168.1.108"
-#define ROBOTPORT 6665
 
-#define TOLERANCE .1
+#define ROBOTIP "192.168.1.108"
+#define ROBOTPORT 6666
+
 #define PRECISION .01
 #define DEGREE 10
 
@@ -30,7 +33,7 @@
 //-1 means unconstrained
 #define VMAX .3
 #define VMIN .1
-#define OMEGAMAX 1
+#define OMEGAMAX .5
 #define OMEGAMIN 0
 
 #define POLYTIME params->controlHorizon;
@@ -107,7 +110,9 @@ void buildPolynoms(double ** path,double ** pathDeriv,int steps,double range,
     y[i] = path[i][1];
     weights[i] = 1;
 
+    std::cout << x[i] << "," << y[i] << "\n";
   }
+
 
   //std::cout << dt << std::endl;
   //std::cout << path[steps][0] << "," << path[steps][1] << std::endl;
@@ -121,21 +126,21 @@ void buildPolynoms(double ** path,double ** pathDeriv,int steps,double range,
   */
 
   //put constraints on the endpoint
-  tc.setlength(3);
-  xc.setlength(3);
-  yc.setlength(3);
+  tc.setlength(2);
+  xc.setlength(2);
+  yc.setlength(2);
 
   tc[0] = range;
   tc[1] = 0;
-  tc[2] = range;
+  //tc[2] = range;
 
   xc[0] = path[steps][0];
   xc[1] = path[0][0];
-  xc[2] = (path[steps+1][0]-path[steps][0])/dt;
+  //xc[2] = (path[steps+1][0]-path[steps][0])/dt;
 
   yc[0] = path[steps][1];
   yc[1] = path[0][1];
-  yc[2] = (path[steps+1][1]-path[steps][1])/dt;
+  //yc[2] = (path[steps+1][1]-path[steps][1])/dt;
 
   alglib::integer_1d_array type("[0,0,1]");
 
@@ -190,18 +195,18 @@ struct trajController{
   double startTime,currTime,prevTime;
 
   double prevVel,prevOmega;
-  trajController(double * endGoal){
+  trajController(double * endGoal,double tol){
     this->endGoal[0] = endGoal[0];
     this->endGoal[1] = endGoal[1];
 
     client = new PlayerClient(ROBOTIP,ROBOTPORT);
     pos = new Position2dProxy(client,0);
-    tol = TOLERANCE;
+    this->tol = tol;
 
     client->Read();
     pose[0] = pos->GetXPos();
     pose[1] = pos->GetYPos();
-    pose[3] = pos->GetYaw();
+    pose[2] = pos->GetYaw();
 
   }
 
@@ -229,7 +234,7 @@ struct trajController{
       barycentricdiff2(*xpath,currTime-startTime,desiredX[0],desiredV[0],desiredA[0]);
       barycentricdiff2(*ypath,currTime-startTime,desiredX[1],desiredV[1],desiredA[1]);
       
-      //std::cout << desiredX[0] << "," << desiredX[1] << "," << currTime-startTime << ";";
+      //std::cout << desiredX[0] << "," << desiredX[1] << ";";
 
       //std::cout << "desired x: " << desiredX[0] << " desired y: " << desiredX[1] << std::endl;
     
@@ -237,6 +242,12 @@ struct trajController{
       pose[0] = pos->GetXPos();
       pose[1] = pos->GetYPos();
       pose[2] = pos->GetYaw();
+
+      //std::cout << pose[0] << "," << pose[1] << ";";
+
+      //if(pose[2] <= 0)
+      //pose[2] += 2*M_PI;
+      //std::cout << pose[2] << std::endl;
 
       if(gamma(pose,endGoal,2) < tol*tol){
 	pos->SetSpeed(0,0);
@@ -252,7 +263,7 @@ struct trajController{
 	currVel[0] = pos->GetXSpeed()*cos(pose[2]);
 	currVel[1] = pos->GetXSpeed()*sin(pose[2]);
 	//currVel[0] = prevVel*cos(pose[2])*((rand()-rand())
-	//				   /static_cast<double>(RAND_MAX));
+	//1				   /static_cast<double>(RAND_MAX));
 	//currVel[1] = prevVel*sin(pose[2])*((rand()-rand())
 	//				   /static_cast<double>(RAND_MAX));
 
@@ -274,6 +285,7 @@ struct trajController{
 
 
       v = satv(v);
+      v = v > 0 ? v : 0; //Positive velocities only, thank you very much.
       omega = satw(omega);
     
       pos->SetSpeed(v,omega);
@@ -295,13 +307,15 @@ struct trajController{
     
 
     //std::cout << "DONE!\n";
-    std::cout << "Time used: " << currTime - startTime << std::endl;
+    //std::cout << "Time used: " << currTime - startTime << std::endl;
     //std::cout << "];\n";
   }
 
 };
 
 int main(){
+  vicon_pos tmpvicon("base");
+  tmpvicon.update();
 
   //Setup
   char filename[] = "lab.cfg";
@@ -315,9 +329,25 @@ int main(){
   buildEnvironment(&c,env,2);
   buildMPNParams(&c,params);
 
+  int j = 0;
+  float temparray[3];
+  for(unsigned int i(0); i<tmpvicon.subjects->size() && j<env->obstacles.size(); i++){
+    if((*tmpvicon.subjects)[i].find("Obstacle") != std::string::npos){
+      env->obstacles[j]->radius = .18;
+      tmpvicon.get_coord(i,temparray[0],temparray[1],temparray[2]);
+      env->obstacles[j]->pos[0] = temparray[0];
+      env->obstacles[j]->pos[1] = temparray[1];
+      std::cout << "obstacle at: " << env->obstacles[j]->pos[0] << "," << env->obstacles[j]->pos[1] << std::endl;
+      j++;
+    }
+      
+  }
+
+  tmpvicon.disconnect();
+
   //std::cout << "goal: " << env->goal[0] << "," << env->goal[1] << std::endl;
 
-  trajController robot(env->goal);
+  trajController robot(env->goal,params->tolerance);
 
   int steps,CHI,nextSteps,nextCHI; //CHI = Control Horizon Index
   double start[2],dt = PRECISION;//,time=params->controlHorizon;
@@ -337,14 +367,17 @@ int main(){
   nextYPoly = new alglib::barycentricinterpolant();
   
   //Generate an initial path
-  generateBestPath(env,params,intgr,bestPath,bestControl,steps,CHI,start);
+  //std::cout << "Before: " << dynamic_cast<Unicycle *>(intgr)->currTheta << std::endl;
+  bool done = generateBestPath(env,params,intgr,bestPath,bestControl,
+			       steps,CHI,start);
+  //std::cout << "After: " << dynamic_cast<Unicycle *>(intgr)->currTheta << std::endl;
   buildPolynoms(bestPath,bestControl,CHI,time,currXPoly,currYPoly);
 
-  std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI],2)) << std::endl;
+  //std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI],2)) << std::endl;
 
   bool dummy = true;
   double realPos[2] = {start[0],start[1]};
-  while(gamma(realPos,env->goal,2) > TOLERANCE*TOLERANCE ){
+  while(!done){
 
     start[0] = bestPath[CHI][0];
     start[1] = bestPath[CHI][1];
@@ -355,15 +388,17 @@ int main(){
     //std::cout << start[0] << "," << start[1] << std::endl;
     
     //Start driving along the path
-
     boost::thread driveThread(robot,currXPoly,currYPoly,time,dummy);
 
     //Compute the next path
-    generateBestPath(env,params,intgr,nextPath,nextControl,nextSteps,nextCHI,start);
+    //std::cout << "Before: " << dynamic_cast<Unicycle *>(intgr)->currTheta << std::endl;
+    done = generateBestPath(env,params,intgr,nextPath,nextControl,nextSteps,nextCHI,start);
+    //std::cout << "After: " << dynamic_cast<Unicycle *>(intgr)->currTheta << std::endl;
+    //std::cout << "start theta: " << dynamic_cast<Unicycle *>(intgr)->startTheta << "curr theta: " << dynamic_cast<Unicycle *>(intgr)->currTheta << std::endl;
     buildPolynoms(nextPath,nextControl,nextCHI,time,nextXPoly,nextYPoly);
 
-    std::cout << "nominal final pos: " << nextPath[nextCHI][0] << "," << nextPath[nextCHI][1] << std::endl;
-    std::cout << "displacement: " << sqrt(gamma(nextPath[0],nextPath[nextCHI],2)) << std::endl;
+    //std::cout << "nominal final pos: " << nextPath[nextCHI][0] << "," << nextPath[nextCHI][1] << std::endl;
+    //std::cout << "displacement: " << sqrt(gamma(nextPath[0],nextPath[nextCHI],2)) << std::endl;
 
     //Set up for next iteration
     cleanupPoints(bestPath,steps);
@@ -394,6 +429,9 @@ int main(){
     dummy = false;
   }  
 
+  //Drive the final stretch
+  boost::thread driveThread(robot,currXPoly,currYPoly,time,dummy);
+  driveThread.join();
   robot.pos->SetSpeed(0,0);
   sleep(3);
 }
