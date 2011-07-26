@@ -39,10 +39,10 @@ double noExtraCost(Environment * e,double * state);
 double incrementalCost(Environment * e, MPNParams * params,double ** path, double ** controlPath, double dt, int size, double(*extraCost)(Environment *,double *) = noExtraCost);
 
 //Puts the nominal controlPath and the path in the given variables
-int nominalPath(Environment * e,Integrator * intgr,double** controlPath, double ** path,double * start,int steps,Integrator * & atCHI,MPNParams * params = NULL);
+int nominalPath(Environment * e,Integrator * intgr,double** controlPath, double ** path,double * start,int steps,Integrator *& atCHI,MPNParams * params = NULL);
 
 //Puts a sample controlPath and path into the given variables, given a set of parameters
-int samplePath(Environment * e, Integrator * intgr,MPNParams * params,double** controlPath, double ** path,double * start,int steps,Integrator * & atCHI);
+int samplePath(Environment * e, Integrator * intgr,MPNParams * params,double** controlPath, double ** path,double * start,int steps,Integrator *& atCHI);
 
 /* Runs the bulk of the algorithm.
  * 1. compute the nominal path

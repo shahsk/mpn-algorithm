@@ -24,6 +24,7 @@ class Integrator{
   virtual void saveState();
 
   virtual Integrator * copy();
+
 };
 
 #endif

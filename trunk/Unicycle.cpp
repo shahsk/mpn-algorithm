@@ -63,19 +63,20 @@ void Unicycle::saturate(double * val,double upper,double lower){
 
 //Force theta into the +/- pi range
 void Unicycle::normalizeTheta(double * theta){
-  if(*theta > 2*M_PI)
-    *theta -= 2*M_PI;
-  if(*theta < 0)
-    *theta += 2*M_PI;
+  while(*theta > 2*M_PI)
+    *theta = *theta-2*M_PI;
+  while(*theta < 0)
+    *theta = *theta+2*M_PI;
 } 
 
 void Unicycle::step(double * wsState,double * wsGrad,double * wsNewState){
 
   this->normalizeTheta(&this->currTheta);
   double desired = atan2(wsGrad[1],wsGrad[0]);
-  this->normalizeTheta(&desired);  
-
   double difference = desired - this->currTheta;
+  this->normalizeTheta(&desired);
+
+
   if(difference > M_PI)
     difference -= 2*M_PI;
   else if(difference < -M_PI)
@@ -90,7 +91,7 @@ void Unicycle::step(double * wsState,double * wsGrad,double * wsNewState){
   this->currTheta += this->omega*this->dt;  
   wsNewState[0] = wsState[0] + this->v*cos(this->currTheta)*this->dt;
   wsNewState[1] = wsState[1] + this->v*sin(this->currTheta)*this->dt;
-  
+
 }
 
 void Unicycle::saveState(){

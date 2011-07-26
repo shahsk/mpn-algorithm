@@ -11,8 +11,11 @@
 #include "Environment.h"
 #include "specialfunctions.h"
 #include "gamma.h"
+
 #include <cmath>
 #include <iostream>
+
+#include <typeinfo>
 
 #define MAX_TRIES 100
 
@@ -72,39 +75,63 @@ double incrementalCost(Environment * e, MPNParams * params,double ** path, doubl
 }
 
 //Puts the nominal controlPath and the path in the given pointers
-int nominalPath(Environment * e,Integrator * intgr,double** controlPath, double ** path,double * start,int steps,Integrator * & atCHI,MPNParams * params){
+int nominalPath(Environment * e,Integrator * intgr,double** controlPath, double ** path,double * start,int steps,Integrator *& atCHI,MPNParams * params){
   double * current = start;
   int CHI = -1;
+  Integrator * tmpPtr = NULL;
   if(params != NULL){
     CHI = ceil(static_cast<double>(params->controlHorizon/intgr->getDt()));
   }
 
   for(int i(0); i<steps; i++){
-    e->negatedGradient(current,controlPath[i]);
-    intgr->step(current,controlPath[i],path[i]);
-    current = path[i];
     if(params != NULL){
       if(gamma(e->goal,current,DIM) < pow(params->tolerance,2)){
-	atCHI = intgr->copy();
+	if(tmpPtr == NULL){
+	  tmpPtr = intgr->copy();
+	  tmpPtr->saveState();
+	  atCHI = tmpPtr;
+	}
 	return i;
       }
       if(i == CHI){
-	atCHI = intgr->copy();
+	tmpPtr = intgr->copy();
+	tmpPtr->saveState();
+	atCHI = tmpPtr;
       }
     }
+    e->negatedGradient(current,controlPath[i]);
+    intgr->step(current,controlPath[i],path[i]);
+    current = path[i];
+
   }
   return steps;
 }
 
 //Puts a sample controlPath and path into the given variables, given a set of parameters
-int samplePath(Environment * e, Integrator * intgr,MPNParams * params,double** controlPath, double ** path,double * start,int steps,Integrator * & atCHI){
+int samplePath(Environment * e, Integrator * intgr,MPNParams * params,double** controlPath, double ** path,double * start,int steps,Integrator *& atCHI){
   double * current = start,angPerturb,tmpSin,tmpCos;
   double * currentGrad;
   double currentPolyTime = params->currentTime/params->predictionHorizon;
   double polyDt = intgr->getDt()/params->predictionHorizon;
   int CHI = ceil(static_cast<double>(params->controlHorizon/intgr->getDt()));
+  double tmpGrad[2];
+  Integrator * tmpPtr = NULL;
 
   for(int i(0); i<steps; i++){
+
+    if(gamma(current,e->goal,DIM) < pow(params->tolerance,2)){
+      if(tmpPtr == NULL){
+	tmpPtr = intgr->copy();
+	tmpPtr->saveState();
+	atCHI = tmpPtr;
+      }
+      return i;
+    }
+    if(i == CHI){
+      tmpPtr = intgr->copy();
+      tmpPtr->saveState();
+      atCHI = tmpPtr;
+    }
     
     currentGrad = controlPath[i];
     e->negatedGradient(current,currentGrad);//store nominal gradient
@@ -118,22 +145,15 @@ int samplePath(Environment * e, Integrator * intgr,MPNParams * params,double** c
       tmpSin = sin(angPerturb);
       
       //store new gradient
-      currentGrad[0] = currentGrad[0]*tmpCos - currentGrad[1]*tmpSin;
-      currentGrad[1] = currentGrad[1]*tmpCos + currentGrad[0]*tmpSin;
+      tmpGrad[0] = currentGrad[0]*tmpCos - currentGrad[1]*tmpSin;
+      tmpGrad[1] = currentGrad[1]*tmpCos + currentGrad[0]*tmpSin;
+      currentGrad[0] = tmpGrad[0];
+      currentGrad[1] = tmpGrad[1];
     }
     //std::cout << "CurrentGrad after: " << currentGrad[0] << "," << currentGrad[1] << std::endl;
 
     intgr->step(current,currentGrad,path[i]);
     current = path[i];
-    if(gamma(path[i],e->goal,DIM) < pow(params->tolerance,2)){
-      atCHI = intgr->copy();
-      atCHI->saveState();
-      return i;
-    }
-    if(i==CHI){
-      atCHI = intgr->copy();
-      atCHI->saveState();
-    }
     //std::cout << current[0] << "," << current[1] << std::endl;
   }
   return steps;
@@ -154,9 +174,8 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
   
   double ** nominal = allocatePoints(steps);
   double ** nominalControl = allocatePoints(steps);
-  Integrator * optimalEndIntegrator,* tempPtr;
-  int bestSteps=nominalPath(e,intgr,nominalControl,nominal,start,steps,tempPtr,params);
-  optimalEndIntegrator = tempPtr->copy();
+  Integrator * optimalEndIntegrator,* tempPtr = intgr->copy();
+  int bestSteps=nominalPath(e,intgr,nominalControl,nominal,start,steps,optimalEndIntegrator,params);
   int bestCHI=bestSteps < controlHorizonIndex ? bestSteps : controlHorizonIndex;
 
   //initialize with nominal values
@@ -186,13 +205,14 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
   double ** currentControlPath = allocatePoints(steps);
   
   int acceptedSoFar = 1,tries = 0;
+  double tmpl = 1.0/params->nLegendrePolys;
   do{
     intgr->reset();
     //generate control inputs on +/- 1/(number of inputs)
     for(unsigned int i(0); i<params->nLegendrePolys; i++){
-      params->controlParameters[i] = (static_cast<double>(rand() - rand())/RAND_MAX)/static_cast<double>(params->nLegendrePolys);
+      params->controlParameters[i] = (2.0*tmpl)*(rand()*(1.0/(RAND_MAX + 1.0))) - tmpl;
     }
-    
+    delete tempPtr;
     currSteps=samplePath(e,intgr,params,currentControlPath,currentPath,start,steps,tempPtr);
     currCHI=currSteps < controlHorizonIndex ? currSteps : controlHorizonIndex;
     currentControlHorizonCost = terminalCost(e,currentPath,currCHI);
@@ -230,6 +250,7 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
 	  delete optimalEndIntegrator;
 	  //optimalEndIntegrator = intgr->copy();
 	  optimalEndIntegrator = tempPtr->copy();
+
 	  //memcpy(&optimalEndIntegrator,intgr,sizeof(Unicycle));
 	}
       }
@@ -259,6 +280,11 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
   cleanupPoints(currentPath,steps);
   cleanupPoints(nominalControl,steps);
   cleanupPoints(currentControlPath,steps);
+
+  //std::cout << "Alleged angle: " << dynamic_cast<Unicycle *>(optimalEndIntegrator)->currTheta << std::endl;
+  //std::cout << "Angle from x: " << atan2(bestPath[bestCHI+1][1]-bestPath[bestCHI][1],bestPath[bestCHI+1][0]-bestPath[bestCHI][0]) << std::endl;
+  //std::cout << "Angle from dx: " << atan2(bestControl[bestCHI][1],bestControl[bestCHI][0]) << std::endl;
+
 
   return arrived;
 }

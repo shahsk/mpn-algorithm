@@ -83,6 +83,14 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
       mxGetPr(plhs[4])[i] = path[i][1];
     }
   }
+
   *mxGetPr(plhs[2]) = static_cast<double>(controlIndex + 1);
+
+  Unicycle * tmp = dynamic_cast<Unicycle *>(intgr);
+  if(tmp != NULL){
+    mexPrintf("CHI orientation: %f\n",tmp->currTheta);
+    mexPrintf("CHI orientation: %f\n",tmp->startTheta);
+  }
+
   cleanupPoints(path,steps);
 }
