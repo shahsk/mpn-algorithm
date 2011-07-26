@@ -42,7 +42,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   //Initialize environment
   Environment * e;
   MPNParams * mp;
-  Integrator * intgr;
+  Integrator * intgr,* atCHI;
   int fileIndex = -1,paramIndex = -1;
   if(nrhs > 3){
     if(mxGetClassID(prhs[3]) == mxCHAR_CLASS){
@@ -83,6 +83,14 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
     }
   }
 
+  
+  //Calculate a sample path
+  double ** path = allocatePoints(steps);
+  double ** controlPath = allocatePoints(steps);
+  double finalOri;
+  steps = samplePath(e,intgr,mp,controlPath,path,start,steps,atCHI);
+
+
   //Allocate space for the answer
   plhs[0] = mxCreateDoubleMatrix(1,steps,mxREAL);
   plhs[1] = mxCreateDoubleMatrix(1,steps,mxREAL);
@@ -91,12 +99,6 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
     plhs[3] = mxCreateDoubleMatrix(1,steps,mxREAL);
   }
 
-  
-  //Calculate a sample path
-  double ** path = allocatePoints(steps);
-  double ** controlPath = allocatePoints(steps);
-  double finalOri;
-  samplePath(e,intgr,mp,controlPath,path,start,steps);
 
   //Copy the answer into the matlab vectors for output
   for(int i(0); i<steps; i++){
@@ -107,6 +109,14 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
       mxGetPr(plhs[3])[i] = controlPath[i][1];      
     }
   }
+
+  Unicycle * tmp = dynamic_cast<Unicycle *>(intgr);
+  Unicycle * tmp1 = dynamic_cast<Unicycle *>(atCHI);
+  if(tmp != NULL && tmp1 != NULL){
+    mexPrintf("Final orientation: %f\n",tmp->currTheta);
+    mexPrintf("CHI orientation: %f\n",tmp1->startTheta);
+  }
+
 
   cleanupPoints(path,steps);
   cleanupPoints(controlPath,steps);

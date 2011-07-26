@@ -1,4 +1,3 @@
-
 #include "alglib/interpolation.h"
 #include "MPN2D.h"
 #include "Integrator.h"
@@ -18,8 +17,8 @@
 #include <boost/thread.hpp>
 
 
-#define ROBOTIP "192.168.1.108"
-#define ROBOTPORT 6666
+#define ROBOTIP "localhost"//"192.168.1.108"
+#define ROBOTPORT 6665
 
 #define PRECISION .01
 #define DEGREE 10
@@ -314,8 +313,8 @@ struct trajController{
 };
 
 int main(){
-  vicon_pos tmpvicon("base");
-  tmpvicon.update();
+  //vicon_pos tmpvicon("base");
+  //tmpvicon.update();
 
   //Setup
   char filename[] = "lab.cfg";
@@ -329,6 +328,7 @@ int main(){
   buildEnvironment(&c,env,2);
   buildMPNParams(&c,params);
 
+  /*
   int j = 0;
   float temparray[3];
   for(unsigned int i(0); i<tmpvicon.subjects->size() && j<env->obstacles.size(); i++){
@@ -344,6 +344,7 @@ int main(){
   }
 
   tmpvicon.disconnect();
+  */
 
   //std::cout << "goal: " << env->goal[0] << "," << env->goal[1] << std::endl;
 
@@ -359,6 +360,9 @@ int main(){
   start[1] = robot.pos->GetYPos();
 
   intgr = new Unicycle(dt,robot.pos->GetYaw(),VMAX,OMEGAMAX,VMIN,-1);
+  //intgr = new Unicycle(dt,robot.pos->GetYaw());
+  //intgr = new Integrator(dt,2);
+  
 
   alglib::barycentricinterpolant *currXPoly,*currYPoly,*nextXPoly,*nextYPoly,*tmp;
   currXPoly = new alglib::barycentricinterpolant();
@@ -370,7 +374,6 @@ int main(){
   //std::cout << "Before: " << dynamic_cast<Unicycle *>(intgr)->currTheta << std::endl;
   bool done = generateBestPath(env,params,intgr,bestPath,bestControl,
 			       steps,CHI,start);
-  //std::cout << "After: " << dynamic_cast<Unicycle *>(intgr)->currTheta << std::endl;
   buildPolynoms(bestPath,bestControl,CHI,time,currXPoly,currYPoly);
 
   //std::cout << "displacement: " << sqrt(gamma(bestPath[0],bestPath[CHI],2)) << std::endl;
@@ -393,6 +396,7 @@ int main(){
     //Compute the next path
     //std::cout << "Before: " << dynamic_cast<Unicycle *>(intgr)->currTheta << std::endl;
     done = generateBestPath(env,params,intgr,nextPath,nextControl,nextSteps,nextCHI,start);
+
     //std::cout << "After: " << dynamic_cast<Unicycle *>(intgr)->currTheta << std::endl;
     //std::cout << "start theta: " << dynamic_cast<Unicycle *>(intgr)->startTheta << "curr theta: " << dynamic_cast<Unicycle *>(intgr)->currTheta << std::endl;
     buildPolynoms(nextPath,nextControl,nextCHI,time,nextXPoly,nextYPoly);
