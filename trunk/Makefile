@@ -1,5 +1,5 @@
 ALGLIB_USED = alglib/alglibinternal.o alglib/ap.o alglib/specialfunctions.o alglib/interpolation.o alglib/alglibmisc.o alglib/optimization.o alglib/linalg.o alglib/dataanalysis.o alglib/integration.o alglib/solvers.o alglib/statistics.o
-OBJS = gamma.o Environment.o Obstacle.o MPN2D.o Integrator.o Unicycle.o Build.o vicon_multi.o
+OBJS = gamma.o saturate.o Environment.o Obstacle.o MPN2D.o Integrator.o Unicycle.o Build.o vicon_multi.o
 all: brownianSim test
 
 test: test.cpp $(OBJS) alglib

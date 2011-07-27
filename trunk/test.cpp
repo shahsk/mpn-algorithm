@@ -5,6 +5,7 @@
 #include "Environment.h"
 #include "Obstacle.h"
 #include "gamma.h"
+#include "saturate.h"
 #include <math.h>
 #include <iostream>
 #include <libplayerc++/playerc++.h>
@@ -17,8 +18,8 @@
 #include <boost/thread.hpp>
 
 
-#define ROBOTIP "localhost"//"192.168.1.108"
-#define ROBOTPORT 6665
+#define ROBOTIP "192.168.1.113"
+#define ROBOTPORT 6666
 
 #define PRECISION .01
 #define DEGREE 10
@@ -64,7 +65,6 @@ double saturate(double val, double min, double max){
 
 double satv(double v){return saturate(v,VMIN,VMAX); }
 double satw(double w){return saturate(w,OMEGAMIN,OMEGAMAX); }
-
 /*
 //Emulate the robot's minimum velocity for simulation
 double satv(double v){
@@ -80,7 +80,7 @@ double satw(double v){
   else
     return saturate(v,OMEGAMIN,OMEGAMAX);
 }
-*/
+
 
 int sign(double a){
   if(a>0)
@@ -88,7 +88,7 @@ int sign(double a){
   else
     return -1;
 }
-
+*/
 
 //Builds 2 polynomials x(t) and y(t) on the given x,y trajectory. t ranges from 0 to 1
 void buildPolynoms(double ** path,double ** pathDeriv,int steps,double range,
@@ -109,7 +109,7 @@ void buildPolynoms(double ** path,double ** pathDeriv,int steps,double range,
     y[i] = path[i][1];
     weights[i] = 1;
 
-    std::cout << x[i] << "," << y[i] << "\n";
+    //std::cout << x[i] << "," << y[i] << "\n";
   }
 
 
@@ -183,8 +183,8 @@ alglib::barycentricfitfloaterhormannwc(
 }
 
 struct trajController{
-  PlayerClient * client;
-  Position2dProxy * pos;
+  PlayerClient * client,* me;
+  Position2dProxy * pos,*drive;
   double endGoal[2];
 
   double goal[2],pose[3],currVel[2],tol,desiredV[2],desiredX[2],desiredA[2],u[2],v,omega,acc,dt;
@@ -199,10 +199,13 @@ struct trajController{
     this->endGoal[1] = endGoal[1];
 
     client = new PlayerClient(ROBOTIP,ROBOTPORT);
-    pos = new Position2dProxy(client,0);
+    me = new PlayerClient("localhost",6665);
+    drive = new Position2dProxy(client,0);
+    pos = new Position2dProxy(me,0);
+
     this->tol = tol;
 
-    client->Read();
+    me->Read();
     pose[0] = pos->GetXPos();
     pose[1] = pos->GetYPos();
     pose[2] = pos->GetYaw();
@@ -237,7 +240,7 @@ struct trajController{
 
       //std::cout << "desired x: " << desiredX[0] << " desired y: " << desiredX[1] << std::endl;
     
-      client->Read();
+      me->Read();
       pose[0] = pos->GetXPos();
       pose[1] = pos->GetYPos();
       pose[2] = pos->GetYaw();
@@ -249,7 +252,7 @@ struct trajController{
       //std::cout << pose[2] << std::endl;
 
       if(gamma(pose,endGoal,2) < tol*tol){
-	pos->SetSpeed(0,0);
+	drive->SetSpeed(0,0);
 	break;
       }
 
@@ -284,12 +287,14 @@ struct trajController{
 
 
       v = satv(v);
+      //saturate(&v,VMAX,VMIN);
       v = v > 0 ? v : 0; //Positive velocities only, thank you very much.
       omega = satw(omega);
+      //saturate(&omega,OMEGAMAX,OMEGAMIN);
     
-      pos->SetSpeed(v,omega);
+      drive->SetSpeed(v,omega);
 
-      //std::cout << "vel: " << v << " omega: " << omega << std::endl;    
+      std::cout << "vel: " << v << " omega: " << omega << std::endl;    
 
       prevTime = currTime;
       do{
@@ -313,8 +318,8 @@ struct trajController{
 };
 
 int main(){
-  //vicon_pos tmpvicon("base");
-  //tmpvicon.update();
+  vicon_pos tmpvicon("base");
+  tmpvicon.update();
 
   //Setup
   char filename[] = "lab.cfg";
@@ -328,7 +333,6 @@ int main(){
   buildEnvironment(&c,env,2);
   buildMPNParams(&c,params);
 
-  /*
   int j = 0;
   float temparray[3];
   for(unsigned int i(0); i<tmpvicon.subjects->size() && j<env->obstacles.size(); i++){
@@ -344,7 +348,6 @@ int main(){
   }
 
   tmpvicon.disconnect();
-  */
 
   //std::cout << "goal: " << env->goal[0] << "," << env->goal[1] << std::endl;
 
@@ -355,7 +358,7 @@ int main(){
   double time = POLYTIME;
   double ** bestPath,**bestControl,**nextPath,**nextControl;
 
-  robot.client->Read();
+  robot.me->Read();
   start[0] = robot.pos->GetXPos();
   start[1] = robot.pos->GetYPos();
 
@@ -436,6 +439,6 @@ int main(){
   //Drive the final stretch
   boost::thread driveThread(robot,currXPoly,currYPoly,time,dummy);
   driveThread.join();
-  robot.pos->SetSpeed(0,0);
+  robot.drive->SetSpeed(0,0);
   sleep(3);
 }
