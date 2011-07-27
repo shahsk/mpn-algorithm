@@ -46,10 +46,8 @@ class Unicycle: public Integrator{
   //Temporaries
   double vdot,v,omega,tmpSin,tmpCos;
 
-  double sign(double num);
   void satv(double * v);
   void satw(double * w);
-  void saturate(double * val,double upper,double lower);
   void normalizeTheta(double * theta); 
 
  public:

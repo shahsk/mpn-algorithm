@@ -1,4 +1,5 @@
 #include "Unicycle.h"
+#include "saturate.h"
 #include "math.h"
 #include <iostream>
 
@@ -41,25 +42,8 @@ void Unicycle::reset(){
   this->currTheta = this->startTheta;
 }
 
-double Unicycle::sign(double num){
-  if(num > 0)
-    return 1;
-  else if(num < 0)
-    return -1;
-  else
-    return 0;
-}
-void Unicycle::satv(double * v){this->saturate(v,this->vmax,this->vmin);}
-void Unicycle::satw(double * w){this->saturate(w,this->omegamax,this->omegamin);};
-void Unicycle::saturate(double * val,double upper,double lower){
-  if(fabs(*val) > upper && upper > 0){
-    *val = this->sign(*val)*upper;
-  }
-  else if(*val < lower && lower > 0){
-    *val = this->sign(*val)*lower;
-  }
-
-}
+void Unicycle::satv(double * v){saturate(v,this->vmax,this->vmin);}
+void Unicycle::satw(double * w){saturate(w,this->omegamax,this->omegamin);};
 
 //Force theta into the +/- pi range
 void Unicycle::normalizeTheta(double * theta){
