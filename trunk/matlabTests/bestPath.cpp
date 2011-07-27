@@ -49,7 +49,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   Integrator * intgr;
   char filename[256];
   if(nrhs == 4){
-    mxGetString(prhs[3],filename,mxGetN(prhs[3])+1);
+    mxGetString(prhs[3],filename,256);
   }
   else{
     strcpy(filename,DEFAULT_FILE);
