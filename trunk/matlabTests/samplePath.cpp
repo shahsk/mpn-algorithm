@@ -57,7 +57,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
 
   char filename[256];
   if(fileIndex > 0){
-    mxGetString(prhs[fileIndex],filename,mxGetN(prhs[3])+1);
+    mxGetString(prhs[fileIndex],filename,256);
     //mexPrintf(filename);
   }
   else{

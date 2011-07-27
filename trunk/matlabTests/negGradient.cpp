@@ -35,7 +35,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   Environment * e;
   char filename[256];
   if(nrhs == 3){
-    mxGetString(prhs[2],filename,mxGetN(prhs[2])+1);
+    mxGetString(prhs[2],filename,256);
   }
   else{
     strcpy(filename,DEFAULT_FILE);

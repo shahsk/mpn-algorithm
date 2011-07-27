@@ -23,7 +23,7 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
   Environment * e;
   char filename[256];
   if(nrhs == 1){
-    mxGetString(prhs[0],filename,mxGetN(prhs[0])+1);
+    mxGetString(prhs[0],filename,256);
   }
   else{
     strcpy(filename,DEFAULT_FILE);
