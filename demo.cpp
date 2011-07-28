@@ -19,12 +19,12 @@
 
 #define CONFIG_FILE "lab.cfg"
 
-#define ROBOTIP "localhost"//"192.168.1.108"
-#define ROBOTPORT 6665
+#define ROBOTIP "192.168.1.113"
+#define ROBOTPORT 6666
 #define SOURCEIP "localhost"
 #define SOURCEPORT 6665
 
-#define USE_ROBOT_POS true
+#define USE_ROBOT_POS false
 
 #define PRECISION .01
 
