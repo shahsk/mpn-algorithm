@@ -73,8 +73,10 @@ void Unicycle::step(double * wsState,double * wsGrad,double * wsNewState){
   this->satv(&this->v);
 
   this->currTheta += this->omega*this->dt;  
-  wsNewState[0] = wsState[0] + this->v*cos(this->currTheta)*this->dt;
-  wsNewState[1] = wsState[1] + this->v*sin(this->currTheta)*this->dt;
+  wsGrad[0] = this->v*cos(this->currTheta);
+  wsGrad[1] = this->v*sin(this->currTheta);
+  wsNewState[0] = wsState[0] + wsGrad[0]*this->dt;
+  wsNewState[1] = wsState[1] + wsGrad[1]*this->dt;
 
 }
 
