@@ -15,9 +15,7 @@
 #include <cmath>
 #include <iostream>
 
-#include <typeinfo>
-
-#define MAX_TRIES 100
+#define MAX_TRIES 1000
 
 double noExtraCost(Environment * e,double * state){return 0.;}
 
@@ -49,7 +47,6 @@ double anglePerturb(MPNParams * params, double * gradient,double polytime){
 
 //Size is the index of the path to use, usually the number of steps
 double terminalCost(Environment * e,double ** path,int size){
-	//std::cout << "terminalIndex: " << path[size-1][0] << "," << path[size-1][1];
 	return e->potentialField(path[size-1]);
 }
 
@@ -206,6 +203,7 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
   
   int acceptedSoFar = 1,tries = 0;
   double tmpl = 1.0/params->nLegendrePolys;
+  double gammaCost = gamma(start,e->goal,2);
   do{
     intgr->reset();
     //generate control inputs on +/- 1/(number of inputs)
@@ -218,7 +216,7 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
     currentControlHorizonCost = terminalCost(e,currentPath,currCHI);
     
     //If we made progress toward the goal, count this path
-    if(currentControlHorizonCost < startCost){
+    if(currentControlHorizonCost - startCost <= gammaCost ){
       currentTerminal = terminalCost(e,currentPath,currSteps);
       
       //Only calculate incremental cost if there is a chance this path is 
@@ -285,6 +283,7 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
   //std::cout << "Angle from x: " << atan2(bestPath[bestCHI+1][1]-bestPath[bestCHI][1],bestPath[bestCHI+1][0]-bestPath[bestCHI][0]) << std::endl;
   //std::cout << "Angle from dx: " << atan2(bestControl[bestCHI][1],bestControl[bestCHI][0]) << std::endl;
 
+  //std::cout << "Cost: " << optimalCost << std::endl;
 
   return arrived;
 }
