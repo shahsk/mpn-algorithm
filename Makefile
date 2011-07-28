@@ -9,7 +9,7 @@ MATLAB_EXT = .mexglx
 INCLUDE = -I ./ -I ../ -I ./alglib/
 LIBPATH = -L ./
 
-CFLAGS = 
+CFLAGS = -O1
 
 all: brownianSim test demo
 
@@ -34,6 +34,9 @@ alglib/%.o: alglib/%.cpp
 
 flat_control.o: flat_control.cpp
 	g++ `pkg-config --cflags playerc++` $< -o $@ `pkg-config --libs playerc++` -c
+
+%.o: %.cpp
+	g++ $< -o $@ -c $(CFLAGS)
 
 clean:
 	rm *.o *.so
