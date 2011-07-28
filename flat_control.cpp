@@ -72,13 +72,12 @@ void flat_control::preProcess(double time,double ** path, double ** pathDeriv,
 			      int steps){
   this->nextDuration = time;
   //Copy the path into arrays
-  real_1d_array x,y,t,weights,tc,xc,yc,dx,dy;
+  real_1d_array x,y,t,weights,dx,dy;
   x.setlength(steps+1);
   y.setlength(steps+1);
   dx.setlength(steps+1);
   dy.setlength(steps+1);
   t.setlength(steps+1);
-  weights.setlength(steps+1);
 
   double dt = time/static_cast<double>(steps);
   for(int i(0); i<steps+1; i++){
