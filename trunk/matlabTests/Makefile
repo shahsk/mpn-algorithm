@@ -8,25 +8,17 @@
 # make
 # sudo make install
 
+INCLUDE = -I../ -I../alglib
+LIBPATH = -L../
+LIBS = -lconfig++ -lalglib
+
+OBJS = ../gamma.o ../saturate.o ../Environment.o ../Obstacle.o ../MPN2D.o ../Integrator.o ../Unicycle.o ../Build.o 
+
+PREFIX = matlab -nojvm -r "mex
+
+SUFFIX = ; quit()" 
+
 all: nominalPath potentialField bestPath getObPos
 
-nominalPath: nominalPath.cpp
-	matlab -nojvm -r "mex nominalPath.cpp ../*.o ../alglib/*.o -I../ -I../alglib -lconfig++; quit()" 
-
-potentialField: potentialField.cpp
-	matlab -nojvm -r "mex potentialField.cpp ../*.o ../alglib/*.o -I../ -lconfig++; quit()" 
-
-negGradient: negGradient.cpp
-	matlab -nojvm -r "mex negGradient.cpp ../*.o ../alglib/*.o -I../ -lconfig++; quit()" 
-
-samplePath: samplePath.cpp
-	matlab -nojvm -r "mex samplePath.cpp ../*.o ../alglib/*.o -I../ -lconfig++; quit()" 
-
-bestPath: bestPath.cpp
-	matlab -nojvm -r "mex bestPath.cpp ../*.o ../alglib/*.o -I../ -lconfig++; quit()" 
-
-getObPos: getObPos.cpp
-	matlab -nojvm -r "mex getObPos.cpp ../*.o ../alglib/*.o -I../ -lconfig++; quit()" 
-
-clean:
-	rm *.o
+%: %.cpp
+	$(PREFIX) $< $(OBJS) $(INCLUDE) $(LIBPATH) $(LIBS) $(SUFFIX) 
