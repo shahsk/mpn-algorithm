@@ -72,7 +72,7 @@ void flat_control::preProcess(double time,double ** path, double ** pathDeriv,
 			      int steps){
   this->nextDuration = time;
   //Copy the path into arrays
-  real_1d_array x,y,t,weights,dx,dy;
+  real_1d_array x,y,t,dx,dy;
   x.setlength(steps+1);
   y.setlength(steps+1);
   dx.setlength(steps+1);
@@ -86,7 +86,6 @@ void flat_control::preProcess(double time,double ** path, double ** pathDeriv,
     y[i] = path[i][1];
     dx[i] = pathDeriv[i][0];
     dy[i] = pathDeriv[i][1];
-    weights[i] = 1;
   }
 
 
