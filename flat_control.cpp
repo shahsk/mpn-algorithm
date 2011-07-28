@@ -138,6 +138,10 @@ void flat_control::operator()(){
   
   while(this->currTime - this->startTime < this->currDuration 
 	&& gamma(this->pose,this->goal,2) > this->tol*this->tol){
+    
+    gettimeofday(&this->now,NULL);
+    this->currTime = this->now.tv_sec + this->now.tv_usec/1000000.;
+    
     this->dt = this->currTime - this->prevTime;
     
     /*
