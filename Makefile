@@ -40,3 +40,9 @@ flat_control.o: flat_control.cpp
 
 clean:
 	rm *.o *.so
+
+install: libalglib.so
+	cp $< /usr/lib/
+
+uninstall: libalglib.so
+	rm /usr/lib/$<
