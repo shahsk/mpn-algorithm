@@ -75,11 +75,11 @@ void mexFunction(int nlhs, mxArray *plhs[ ],int nrhs, const mxArray *prhs[ ]) {
     }
   }
   else{
-    srand(time(NULL));
+    srand((unsigned)time(NULL));
 
+    double tmpl = 1.0/mp->nLegendrePolys;
     for(unsigned int i(0); i<mp->nLegendrePolys; i++){
-      mp->controlParameters[i] = (static_cast<double>(rand() - rand())/RAND_MAX)
-	/static_cast<double>(mp->nLegendrePolys);
+      mp->controlParameters[i] = (2.0*tmpl)*(rand()*(1.0/(RAND_MAX + 1.0))) - tmpl;
     }
   }
 

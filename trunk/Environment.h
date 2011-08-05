@@ -102,7 +102,6 @@ class DipolarEnvironment: public Environment{
 
   void negatedGradient(double * q,double * answer);
   double potentialField(double * q);
-  void integrator(double * q,double * negGrad,double & currentOri, double dt, double * ans); 
 
 };
 

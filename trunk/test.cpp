@@ -13,12 +13,13 @@
 #include <time.h>
 #include <libconfig.h++>
 #include <string>
+#include <fstream>
 
 #include "vicon_multi.hh"
 #include <boost/thread.hpp>
 
 
-#define ROBOTIP "192.168.1.113"
+#define ROBOTIP "192.168.1.105"
 #define ROBOTPORT 6666
 
 #define PRECISION .01
@@ -34,7 +35,7 @@
 #define VMAX .3
 #define VMIN .1
 #define OMEGAMAX .5
-#define OMEGAMIN 0
+#define OMEGAMIN -1
 
 #define POLYTIME params->controlHorizon;
 
@@ -185,6 +186,7 @@ alglib::barycentricfitfloaterhormannwc(
 struct trajController{
   PlayerClient * client,* me;
   Position2dProxy * pos,*drive;
+
   double endGoal[2];
 
   double goal[2],pose[3],currVel[2],tol,desiredV[2],desiredX[2],desiredA[2],u[2],v,omega,acc,dt;
@@ -195,13 +197,16 @@ struct trajController{
 
   double prevVel,prevOmega;
   trajController(double * endGoal,double tol){
+    
     this->endGoal[0] = endGoal[0];
     this->endGoal[1] = endGoal[1];
 
     client = new PlayerClient(ROBOTIP,ROBOTPORT);
-    me = new PlayerClient("localhost",6665);
+    //me = new PlayerClient("localhost",6665);
+    me = client;
     drive = new Position2dProxy(client,0);
-    pos = new Position2dProxy(me,0);
+    //pos = new Position2dProxy(me,0);
+    pos = drive;
 
     this->tol = tol;
 
@@ -236,7 +241,7 @@ struct trajController{
       barycentricdiff2(*xpath,currTime-startTime,desiredX[0],desiredV[0],desiredA[0]);
       barycentricdiff2(*ypath,currTime-startTime,desiredX[1],desiredV[1],desiredA[1]);
       
-      //std::cout << desiredX[0] << "," << desiredX[1] << ";";
+      std::cout << desiredX[0] << "," << desiredX[1] << "," ;
 
       //std::cout << "desired x: " << desiredX[0] << " desired y: " << desiredX[1] << std::endl;
     
@@ -245,7 +250,7 @@ struct trajController{
       pose[1] = pos->GetYPos();
       pose[2] = pos->GetYaw();
 
-      //std::cout << pose[0] << "," << pose[1] << ";";
+      std::cout << pose[0] << "," << pose[1] << "\n";
 
       //if(pose[2] <= 0)
       //pose[2] += 2*M_PI;
@@ -286,15 +291,15 @@ struct trajController{
       //std::cout << sin(pose[2]) << std::endl;
 
 
-      v = satv(v);
-      //saturate(&v,VMAX,VMIN);
+      //v = satv(v);
+      saturate(&v,VMAX,VMIN);
       v = v > 0 ? v : 0; //Positive velocities only, thank you very much.
-      omega = satw(omega);
-      //saturate(&omega,OMEGAMAX,OMEGAMIN);
+      //omega = satw(omega);
+      saturate(&omega,OMEGAMAX,OMEGAMIN);
     
       drive->SetSpeed(v,omega);
 
-      std::cout << "vel: " << v << " omega: " << omega << std::endl;    
+      //std::cout << "vel: " << v << " omega: " << omega << std::endl;    
 
       prevTime = currTime;
       do{
