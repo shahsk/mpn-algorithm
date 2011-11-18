@@ -1,4 +1,4 @@
-Instructions for Ubuntu Linux (might also work on a Mac)
+Instructions for Ubuntu Linux
 
 tar -zxvf libconfig-1.4.7.tar.gz
 cd libconfig-1.4.7/
