@@ -38,14 +38,14 @@
 class Environment {//assumed to be centered at 0,0
  protected:
   double k;//tuning parameter for potential field
-  double radius;//size of the workspace
+
   unsigned int dim;
   
   std::vector<double> obstacleBetaValues;
   double envBeta;
 
  public:
-
+  double radius;//size of the workspace
   double * goal;
   std::vector<Obstacle *> obstacles;
 
