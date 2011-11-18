@@ -9,9 +9,12 @@ MATLAB_EXT = .mexglx
 INCLUDE = -I ./ -I ../ -I ./alglib/
 LIBPATH = -L ./
 
-CFLAGS = -O1
+CFLAGS = -O1 
 
-all: brownianSim test demo
+all: 
+
+time_trial: time_trial.cpp $(OBJS) libalglib.so
+	g++ $< $(OBJS) -o $@ -lconfig++ -lalglib $(LIBPATH) $(INCLUDE) 
 
 test: test.cpp $(OBJS) vicon_multi.o libalglib.so
 	g++ `pkg-config --cflags playerc++` $< $(OBJS) vicon_multi.o -o $@ `pkg-config --libs playerc++` -lViconDataStreamSDK_CPP -lconfig++ -lalglib $(LIBPATH) $(INCLUDE)
@@ -30,7 +33,7 @@ libalglib.so: $(ALGLIB_USED)
 	g++ -shared -o $@ $^
 
 alglib/%.o: alglib/%.cpp
-	g++ $< -o $@ -c -fpic -O2
+	g++ $< -o $@ -c -fpic $(CFLAGS)
 
 flat_control.o: flat_control.cpp
 	g++ `pkg-config --cflags playerc++` $< -o $@ `pkg-config --libs playerc++` -c
