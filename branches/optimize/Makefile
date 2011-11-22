@@ -9,7 +9,7 @@ MATLAB_EXT = .mexglx
 INCLUDE = -I ./ -I ../ -I ./alglib/
 LIBPATH = -L ./
 
-CFLAGS = -O1 
+CFLAGS = -O3
 
 all: 
 
