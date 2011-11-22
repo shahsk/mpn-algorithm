@@ -15,7 +15,7 @@
 #include <cmath>
 #include <iostream>
 
-#define MAX_TRIES 1000
+#define MAX_TRIES 10000
 
 double noExtraCost(Environment * e,double * state){return 0.;}
 

@@ -11,8 +11,10 @@
 
 #define CONFIG_FILE "lab.cfg"
 #define STEP .01
-#define STARTX .9 //Starting point is [STARTX*radius,STARTY*radius]
+#define STARTX 0 //Starting point is [STARTX*radius,STARTY*radius]
 #define STARTY .9
+
+#define NTRIALS 100
 
 int main(){
   Environment * env;
@@ -23,7 +25,7 @@ int main(){
   buildAll(CONFIG_FILE,env,bot,mp,STEP);
 
   //Seed rand so that we get the same result every time
-  srand(0);
+  srand(1);
 
   /*
   int nSamples = ceil(log(1/(mp->confidence))/
@@ -37,11 +39,19 @@ int main(){
   start[0] = STARTX*env->radius;
   start[1] = STARTY*env->radius;
 
-  clock_t start_t = clock();
+  clock_t times[NTRIALS];
+  float average = 0;
+  for(int i(0); i<NTRIALS; i++){
+    clock_t start_t = clock();
+    
+    generateBestPath(env,mp,bot,bestPath,bestControl,steps,CHI,start);
+    
+    clock_t end_t = clock();
+    times[i] = end_t-start_t;
+    average += times[i]/static_cast<float>(NTRIALS);
+    printf("Trial %i Cycles: %d \n",i,times[i]);
+  }
+  
+  printf("Average Cycles: %f\n", average);
 
-  generateBestPath(env,mp,bot,bestPath,bestControl,steps,CHI,start);
-
-  clock_t end_t = clock();
-
-  printf("Cycles: %u \n",end_t-start_t);
 }
