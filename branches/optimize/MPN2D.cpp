@@ -10,14 +10,14 @@
 #include "Unicycle.h"
 #include "Environment.h"
 #include "specialfunctions.h"
-#include "gamma.h"
+//#include "gamma.h"
 
 #include <cmath>
 #include <iostream>
 
 #define MAX_TRIES 10000
 
-double noExtraCost(Environment * e,double * state){return 0.;}
+double inline noExtraCost(Environment * e,double * state){return 0.;}
 
 //Allocates a given number of double[2] points
 double ** allocatePoints(int npoints){
@@ -34,41 +34,35 @@ void cleanupPoints(double ** pointArray,int npoints){
 	delete [] pointArray;
 }
 
-double anglePerturb(MPNParams * params, double * gradient,double polytime){
-	double legendreSum = 0;
-	for(unsigned int i(0); i<params->nLegendrePolys; i++){
-	  if(params->controlParameters[i] != 0)
-	    legendreSum += params->controlParameters[i]*alglib::legendrecalculate(i,polytime);
-	}
-
-	return legendreSum*(M_PI);
-
-}
-
 //Size is the index of the path to use, usually the number of steps
-double terminalCost(Environment * e,double ** path,int size){
+double inline terminalCost(Environment * e,double ** path,int size){
 	return e->potentialField(path[size-1]);
 }
 
 //Size should be the actual size of path and controlPath
 //TODO: Terminal cost should have a different weight as well
 double incrementalCost(Environment * e, MPNParams * params,double ** path, double ** controlPath, double dt, int size, double(*extraCost)(Environment *,double *)){
+  
+  //compute the value of the cost function at every point
+  double costFunction[size];
+  for(int i(0); i<size; i++){
+    costFunction[i] = params->costWeights[0]*gamma(path[i],e->goal,DIM) +
+      params->costWeights[1]*gamma(controlPath[i],DIM);
+  }
+  
+  if(extraCost != noExtraCost){
+    for(int i(0); i<size; i++){
+      costFunction[i] += params->costWeights[2]*extraCost(e,path[i]);
+    }
+  }
 
-	//compute the value of the cost function at every point
-	double costFunction[size];
-	for(int i(0); i<size; i++){
-	  costFunction[i] = params->costWeights[0]*gamma(path[i],e->goal,DIM) +
-	    params->costWeights[1]*gamma(controlPath[i],DIM) + 
-	    params->costWeights[2]*extraCost(e,path[i]);
-	}
-
-	//do a cumulative integration of the cost function (wrt time) using the trapezoidal method
-	double cost = costFunction[0] + costFunction[size-1];
-	for(int i(1); i<size-1; i++){
-		cost += 2*costFunction[i];
-	}
-
-	return (dt/2.)*cost;
+  //do a cumulative integration of the cost function (wrt time) using the trapezoidal method
+  double cost = costFunction[0] + costFunction[size-1];
+  for(int i(1); i<size-1; i++){
+    cost += 2*costFunction[i];
+  }
+  
+  return (dt/2.)*cost;
 }
 
 //Puts the nominal controlPath and the path in the given pointers
@@ -80,7 +74,12 @@ int nominalPath(Environment * e,Integrator * intgr,double** controlPath, double 
     CHI = ceil(static_cast<double>(params->controlHorizon/intgr->getDt()));
   }
 
+
   for(int i(0); i<steps; i++){
+
+    /*Check to see if we are close enough to the destination
+      NOTE: This doesn't have to happen every point, maybe every 10
+     */
     if(params != NULL){
       if(gamma(e->goal,current,DIM) < pow(params->tolerance,2)){
 	if(tmpPtr == NULL){
@@ -96,6 +95,11 @@ int nominalPath(Environment * e,Integrator * intgr,double** controlPath, double 
 	atCHI = tmpPtr;
       }
     }
+
+    /* Euler integration step
+       NOTE: these two function calls must be done in order and WILL change the
+       internal state of each object.
+     */
     e->negatedGradient(current,controlPath[i]);
     intgr->step(current,controlPath[i],path[i]);
     current = path[i];
@@ -114,8 +118,15 @@ int samplePath(Environment * e, Integrator * intgr,MPNParams * params,double** c
   double tmpGrad[2];
   Integrator * tmpPtr = NULL;
 
-  for(int i(0); i<steps; i++){
+  e->negatedGradient(current,controlPath[0]);
+  intgr->step(current,controlPath[0],path[0]);
+  current = path[0];
 
+  for(int i(1); i<steps; i++){
+
+    /*Check to see if we are close enough to the destination
+      NOTE: This doesn't have to happen every point, maybe every 10
+     */
     if(gamma(current,e->goal,DIM) < pow(params->tolerance,2)){
       if(tmpPtr == NULL){
 	tmpPtr = intgr->copy();
@@ -130,34 +141,39 @@ int samplePath(Environment * e, Integrator * intgr,MPNParams * params,double** c
       atCHI = tmpPtr;
     }
     
+    /*
+      Integration step
+     */
     currentGrad = controlPath[i];
     e->negatedGradient(current,currentGrad);//store nominal gradient
-    //std::cout << "Current: " << current[0] << "," << current[1] << std::endl;
-    //std::cout << "CurrentGrad: " << currentGrad[0] << "," << currentGrad[1] << std::endl;
     currentPolyTime += polyDt;
-    if(i != 0){//perturb the angle of the negated gradient, except for the first step
-      angPerturb = anglePerturb(params,currentGrad,currentPolyTime);
-      //std::cout << "angPerturb: " << angPerturb << std::endl;
-      tmpCos = cos(angPerturb);
-      tmpSin = sin(angPerturb);
-      
-      //store new gradient
-      tmpGrad[0] = currentGrad[0]*tmpCos - currentGrad[1]*tmpSin;
-      tmpGrad[1] = currentGrad[1]*tmpCos + currentGrad[0]*tmpSin;
-      currentGrad[0] = tmpGrad[0];
-      currentGrad[1] = tmpGrad[1];
+    
+    //angPerturb = anglePerturb(params,currentPolyTime);
+
+    angPerturb = 0;
+    for(unsigned int j(0); j<params->nLegendrePolys; j++){
+      if(params->controlParameters[j] != 0)
+	angPerturb += params->controlParameters[j]*
+	  alglib::legendrecalculate(j,currentPolyTime);
     }
-    //std::cout << "CurrentGrad after: " << currentGrad[0] << "," << currentGrad[1] << std::endl;
+    angPerturb*=(M_PI);
+
+    tmpCos = cos(angPerturb);
+    tmpSin = sin(angPerturb);
+    
+    //store new gradient
+    tmpGrad[0] = currentGrad[0]*tmpCos - currentGrad[1]*tmpSin;
+    tmpGrad[1] = currentGrad[1]*tmpCos + currentGrad[0]*tmpSin;
+    currentGrad[0] = tmpGrad[0];
+    currentGrad[1] = tmpGrad[1];
 
     intgr->step(current,currentGrad,path[i]);
     current = path[i];
-    //std::cout << current[0] << "," << current[1] << std::endl;
+
   }
   return steps;
 }
 
-//TODO: Should also save the state of the integrator and return it
-//TODO: Put in a tolerance for the end condition
 bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, double ** &bestPath, double **& bestControl, int & steps, int & controlHorizonIndex,double * start){
   
   //ln(a) = log(a)/log(e) -> ln(a)/ln(b) = log(a)/log(b)
