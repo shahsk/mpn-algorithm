@@ -43,7 +43,7 @@ class Environment {//assumed to be centered at 0,0
   
   std::vector<double> obstacleBetaValues;
   double envBeta;
-
+  double radpow2;
  public:
   double radius;//size of the workspace
   double * goal;

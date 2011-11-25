@@ -9,7 +9,7 @@ MATLAB_EXT = .mexglx
 INCLUDE = -I ./ -I ../ -I ./alglib/
 LIBPATH = -L ./
 
-CFLAGS = -O3
+CFLAGS = -O3 -DDIM2
 
 all: 
 
@@ -27,7 +27,7 @@ brownianSim: brownianSim.cpp $(OBJS) libalglib.so
 	g++ `pkg-config --cflags playerc++` $< $(OBJS) -o $@ `pkg-config --libs playerc++` -lconfig++ -lalglib $(LIBPATH) $(INCLUDE)
 
 MPN2D.o: MPN2D.cpp
-	g++ MPN2D.cpp -Ialglib/ -c
+	g++ MPN2D.cpp -Ialglib/ -c $(CFLAGS)
 
 libalglib.so: $(ALGLIB_USED)
 	g++ -shared -o $@ $^
@@ -38,7 +38,7 @@ alglib/%.o: alglib/%.cpp
 flat_control.o: flat_control.cpp
 	g++ `pkg-config --cflags playerc++` $< -o $@ `pkg-config --libs playerc++` -c
 
-%.o: %.cpp
+%.o: %.cpp 
 	g++ $< -o $@ -c $(CFLAGS)
 
 clean:

@@ -1,0 +1,38 @@
+TODO:
+  11/24
+  points are stored as an array of pointers to double[2]'s, not contiguously
+    maybe fix by using real_2d_array: alglib matrix that is contiguous
+
+  look up compiler directives: you can tell the compiler that some data 
+    data structure will not change for the duration of a function. this will be
+    useful for calls to MPNParams structures, they rarely ever change
+
+  MPN2D::incrementalCost:
+	good canidate for loop unrolling
+	params->costWeights is accessed in an inner loop but never changes
+	multiplication of params->costWeights could be moved outside loop
+	extraCost is rarely ever used: maybe overload incremental cost?
+
+  MPN2D::nominalPath:
+	check for end condition doesn't need to happen at every point
+		
+  MPN2D::samplePath:
+	check for end condition doesn't need to happen at every point
+	find out if there is a cheaper way to rotate vectors
+
+  Environment:
+	the functions in this class get called A LOT, esp. negatedGradient
+	many functions call obstacles.size() in the for-loop declaration
+	obstacles.size() never changes, neither do the positions of obstacles
+	calculateBeta0 calculates pow(radius,2), but this value never changes	
+  
+  make gamma a macro-function
+  
+  look up compiler flags to take full advantage of processor's features
+
+DONE:
+  11/24
+  added macro definition for 2D gamma that eliminates for-loop
+  move exception for the first point outside the loop (samplePath)
+  moved code from anglePerturb into samplePath: that is the only function that 
+    calls it  

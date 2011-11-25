@@ -16,7 +16,7 @@
 
 //return just beta value of the workspace
 double Environment::calculateBeta0(double * q){
-  envBeta = pow(radius,2)- gamma(q,goal,this->dim);
+  envBeta = this->radpow2 - gamma(q,goal,this->dim);
   return envBeta;
 }
 
@@ -38,6 +38,7 @@ Environment::Environment(double * destination,double k_in,double rad,
 			 unsigned int dim){
   this->k = k_in;
   this->radius = rad;
+  this->radpow2 = pow(rad,2);
   this->dim = dim;
   this->goal = new double[this->dim];
   for(unsigned int i(0); i<this->dim; i++){
@@ -50,7 +51,7 @@ Environment::Environment(libconfig::Setting & group,unsigned int dim){
   this->dim = dim;
   this->k = group["potential_parameter"];
   this->radius = group["radius"];
-
+  this->radpow2 = pow(this->radius,2);
   this->goal = new double[this->dim];
   for(unsigned int i(0); i<this->dim; i++)
     this->goal[i] = group["destination"][i];
