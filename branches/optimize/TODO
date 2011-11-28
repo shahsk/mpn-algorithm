@@ -36,3 +36,10 @@ DONE:
   move exception for the first point outside the loop (samplePath)
   moved code from anglePerturb into samplePath: that is the only function that 
     calls it  
+
+  11/27
+  altered the data structure for storing the grid values from an array of 
+  pointers to doubles to a single array of doubles storing the values as
+  x1,y1,x2,y2...  I also had to update a couple loops and access functions so
+  that the correct values were passed in.  It compiles an runs with some
+  improvement under time_trial, but I have no idea if it runs correctly.

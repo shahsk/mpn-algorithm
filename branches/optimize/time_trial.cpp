@@ -34,7 +34,7 @@ int main(){
 		   bot->getDt());
   */
 
-  double ** bestPath,** bestControl, start[2];
+  double * bestPath,* bestControl, start[2];
   int steps,CHI;
   start[0] = STARTX*env->radius;
   start[1] = STARTY*env->radius;
