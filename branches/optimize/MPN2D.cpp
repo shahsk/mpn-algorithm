@@ -56,6 +56,7 @@ double inline terminalCost(Environment *e, double * path, int size)
   return e->potentialField(&path[2*(size-1)]);
 }
     /*
+
 //Size should be the actual size of path and controlPath
 //TODO: Terminal cost should have a different weight as well
 double incrementalCost(Environment * e, MPNParams * params,double ** path, double ** controlPath, double dt, int size, double(*extraCost)(Environment *,double *)){
@@ -82,6 +83,7 @@ double incrementalCost(Environment * e, MPNParams * params,double ** path, doubl
   return (dt/2.)*cost;
 }
     */
+
 //Size should be the actual size of path and controlPath
 //TODO: Terminal cost should have a different weight as well
 double incrementalCost(Environment * e, MPNParams * params,double * path, double * controlPath, double dt, int size, double(*extraCost)(Environment *,double *)){
@@ -189,7 +191,7 @@ int nominalPath(Environment * e,Integrator * intgr,double* controlPath, double *
        internal state of each object.
      */
     e->negatedGradient(current,&controlPath[2*i]);
-    intgr->step(current,&controlPath[i],&path[2*i]);
+    intgr->step(current,&controlPath[2*i],&path[2*i]);
     current = &path[2*i];
 
   }
