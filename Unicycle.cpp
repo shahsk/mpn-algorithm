@@ -1,10 +1,11 @@
+#include "datatypes.h"
 #include "Unicycle.h"
 #include "saturate.h"
 #include "math.h"
 #include <iostream>
 
-Unicycle::Unicycle(double stepTime,double theta,double vmax,double omegamax,
-		   double vmin,double omegamin): Integrator(stepTime,2){
+Unicycle::Unicycle(mpn_float stepTime,mpn_float theta,mpn_float vmax,mpn_float omegamax,
+		   mpn_float vmin,mpn_float omegamin): Integrator(stepTime,2){
   this->startTheta = theta;
   this->vmax = vmax;
   this->omegamax = omegamax;
@@ -17,7 +18,7 @@ Unicycle::Unicycle(double stepTime,double theta,double vmax,double omegamax,
   
 }
 
-Unicycle::Unicycle(libconfig::Setting& group,double stepTime,unsigned int dim):
+Unicycle::Unicycle(libconfig::Setting& group,mpn_float stepTime,unsigned int dim):
   Integrator(stepTime,2){
   
   this->startTheta = group["start_orientation"];
@@ -42,22 +43,22 @@ void Unicycle::reset(){
   this->currTheta = this->startTheta;
 }
 
-void Unicycle::satv(double * v){saturate(v,this->vmax,this->vmin);}
-void Unicycle::satw(double * w){saturate(w,this->omegamax,this->omegamin);};
+void Unicycle::satv(mpn_float * v){saturate(v,this->vmax,this->vmin);}
+void Unicycle::satw(mpn_float * w){saturate(w,this->omegamax,this->omegamin);};
 
 //Force theta into the +/- pi range
-void Unicycle::normalizeTheta(double * theta){
+void Unicycle::normalizeTheta(mpn_float * theta){
   while(*theta > 2*M_PI)
     *theta = *theta-2*M_PI;
   while(*theta < 0)
     *theta = *theta+2*M_PI;
 } 
 
-void Unicycle::step(double * wsState,double * wsGrad,double * wsNewState){
+void Unicycle::step(mpn_float * wsState,mpn_float * wsGrad,mpn_float * wsNewState){
 
   this->normalizeTheta(&this->currTheta);
-  double desired = atan2(wsGrad[1],wsGrad[0]);
-  double difference = desired - this->currTheta;
+  mpn_float desired = atan2(wsGrad[1],wsGrad[0]);
+  mpn_float difference = desired - this->currTheta;
   this->normalizeTheta(&desired);
 
 

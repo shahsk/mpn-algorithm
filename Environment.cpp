@@ -5,6 +5,7 @@
  *      Author: nlacock
  */
 
+#include "datatypes.h"
 #include "Environment.h"
 #include "gamma.h"
 #include <libconfig.h++>
@@ -15,7 +16,7 @@
 #include <iostream>
 
 //return just beta value of the workspace
-double Environment::calculateBeta0(double * q){
+mpn_float Environment::calculateBeta0(mpn_float * q){
   envBeta = this->radpow2 - gamma(q,goal,this->dim);
   return envBeta;
 }
@@ -23,8 +24,8 @@ double Environment::calculateBeta0(double * q){
 //return beta of the whole workspace, including obstacles
 //also refreshes internal beta values
 //Defined as (r_0^2 - ||q-q_0||^2 ) * (product of all obstacle beta values)
-double Environment::calculateBeta(double * q){
-	double beta = calculateBeta0(q);
+mpn_float Environment::calculateBeta(mpn_float * q){
+	mpn_float beta = calculateBeta0(q);
 	if(obstacleBetaValues.size() != obstacles.size())
 		obstacleBetaValues.resize(obstacles.size());
 	for(unsigned int i(0); i<obstacles.size(); i++){
@@ -34,13 +35,13 @@ double Environment::calculateBeta(double * q){
 	return beta;
 }
 
-Environment::Environment(double * destination,double k_in,double rad,
+Environment::Environment(mpn_float * destination,mpn_float k_in,mpn_float rad,
 			 unsigned int dim){
   this->k = k_in;
   this->radius = rad;
   this->radpow2 = pow(rad,2);
   this->dim = dim;
-  this->goal = new double[this->dim];
+  this->goal = new mpn_float[this->dim];
   for(unsigned int i(0); i<this->dim; i++){
     this->goal[i] = destination[i];
   }
@@ -52,12 +53,12 @@ Environment::Environment(libconfig::Setting & group,unsigned int dim){
   this->k = group["potential_parameter"];
   this->radius = group["radius"];
   this->radpow2 = pow(this->radius,2);
-  this->goal = new double[this->dim];
+  this->goal = new mpn_float[this->dim];
   for(unsigned int i(0); i<this->dim; i++)
     this->goal[i] = group["destination"][i];
   
   if(group.exists("obstacles")){
-    double tmpPos[this->dim],tmpR;
+    mpn_float tmpPos[this->dim],tmpR;
     for(unsigned int i(0); i<group["obstacles"].getLength(); i++){
       for(unsigned int j(0); j<this->dim; j++){
 	tmpPos[j] = group["obstacles"][i]["position"][j];
@@ -75,14 +76,14 @@ Environment::~Environment() {
 
 //Calculate the value of the potential field at a given position q
 //Defined as gamma(q,q_d) / ( (gamma(q,q_d)^k + beta)^1/k )
-double Environment::potentialField(double * q){
-  double gq = gamma(q,goal,this->dim);
+mpn_float Environment::potentialField(mpn_float * q){
+  mpn_float gq = gamma(q,goal,this->dim);
   return gq / pow( pow(gq,k) + calculateBeta(q), 1/k);
 }
 
 //puts the negated gradient at q in answer
-void Environment::negatedGradient(double * q,double * answer){
-	double beta = calculateBeta(q); //calculate total beta, refresh values
+void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
+	mpn_float beta = calculateBeta(q); //calculate total beta, refresh values
 
 	//Only happens when inside an obstacle
 	if(beta < 0){
@@ -91,9 +92,9 @@ void Environment::negatedGradient(double * q,double * answer){
 	  return;
 	}
 
-	double gam = gamma(q,goal,this->dim);
-	double gamPowK = pow(gam,k);
-	double dgam,tmp,beta0_partialTerm,betaPartial;
+	mpn_float gam = gamma(q,goal,this->dim);
+	mpn_float gamPowK = pow(gam,k);
+	mpn_float dgam,tmp,beta0_partialTerm,betaPartial;
 
 	for(unsigned int d(0); d<this->dim; d++){
 
@@ -120,8 +121,8 @@ void Environment::negatedGradient(double * q,double * answer){
 	}
 }
 
-DipolarEnvironment::DipolarEnvironment(double * destination,double k_in,
-				       double rad,double ep,double goalOri):
+DipolarEnvironment::DipolarEnvironment(mpn_float * destination,mpn_float k_in,
+				       mpn_float rad,mpn_float ep,mpn_float goalOri):
   Environment(destination,k_in,rad,2){
 
   this->epsilon = ep;
@@ -140,8 +141,8 @@ DipolarEnvironment::DipolarEnvironment(libconfig::Setting & group):
 
 }
 
-void DipolarEnvironment::negatedGradient(double * q,double * answer){
-	double beta = calculateBeta(q); //calculate total beta, refresh values
+void DipolarEnvironment::negatedGradient(mpn_float * q,mpn_float * answer){
+	mpn_float beta = calculateBeta(q); //calculate total beta, refresh values
 
 	//Only happens when inside an obstacle
 	if(beta < 0){
@@ -150,14 +151,14 @@ void DipolarEnvironment::negatedGradient(double * q,double * answer){
 	  return;
 	}
 
-	double gam = gamma(q,goal,this->dim);
-	double gamPowK = pow(gam,k);
-	double rotVector[2] = {cosGoalOri,sinGoalOri};
-	double hval = pow((q[0] - goal[0])*cosGoalOri + 
+	mpn_float gam = gamma(q,goal,this->dim);
+	mpn_float gamPowK = pow(gam,k);
+	mpn_float rotVector[2] = {cosGoalOri,sinGoalOri};
+	mpn_float hval = pow((q[0] - goal[0])*cosGoalOri + 
 			  (q[1] - goal[1])*cosGoalOri,2) + epsilon;
-	double hTmp = 2*((q[0]-goal[0])*cosGoalOri + 
+	mpn_float hTmp = 2*((q[0]-goal[0])*cosGoalOri + 
 			    (q[1]-goal[1])*sinGoalOri);
-	double dgam,tmp,beta0_partialTerm,betaPartial,hPartial;
+	mpn_float dgam,tmp,beta0_partialTerm,betaPartial,hPartial;
 
 	for(int d(0); d<this->dim; d++){
 
@@ -189,9 +190,9 @@ void DipolarEnvironment::negatedGradient(double * q,double * answer){
 
 }
 
-double DipolarEnvironment::potentialField(double * q){
-  double gq = gamma(q,goal,this->dim);
-  double eta = pow((q[0] - goal[0])*cosGoalOri + 
+mpn_float DipolarEnvironment::potentialField(mpn_float * q){
+  mpn_float gq = gamma(q,goal,this->dim);
+  mpn_float eta = pow((q[0] - goal[0])*cosGoalOri + 
 		   (q[1] - goal[1])*cosGoalOri,2);
   return gq / pow( pow(gq,k) + ((epsilon + eta)*calculateBeta(q)), 1/k);
 }

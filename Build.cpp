@@ -1,3 +1,4 @@
+#include "datatypes.h"
 #include "Build.h"
 #include "MPNParams.h"
 #include <libconfig.h++>
@@ -10,7 +11,7 @@
 using namespace libconfig;
 
 void buildAll(const char * filename,Environment * & env, Integrator * & intg,
-	      MPNParams * & mp,double stepTime){
+	      MPNParams * & mp,mpn_float stepTime){
   Config c;
   c.readFile(filename);
 
@@ -32,7 +33,7 @@ void buildEnvironment(const char * filename,Environment * & env,int wsdim){
   buildEnvironment(&c,env,wsdim);
 }
 void buildIntegrator(const char * filename,Integrator * & intg,int wsdim,
-		     double stepTime){
+		     mpn_float stepTime){
   Config c;
   c.readFile(filename);
   buildIntegrator(&c,intg,wsdim,stepTime);
@@ -63,7 +64,7 @@ void buildEnvironment(Config * cfg,Environment * & env,int wsdim){
 
 }
 
-void buildIntegrator(Config * cfg,Integrator *& intg,int wsdim,double stepTime){
+void buildIntegrator(Config * cfg,Integrator *& intg,int wsdim,mpn_float stepTime){
   cfg->setAutoConvert(true);
 
   if(cfg->exists(UNICYCLE_INTEGRATOR)){
@@ -109,7 +110,7 @@ void buildMPNParams(Config * cfg,MPNParams * & mp){
 	mp->costWeights[i] = 1;
     }
     
-    mp->controlParameters = new double[mp->nLegendrePolys];
+    mp->controlParameters = new mpn_float[mp->nLegendrePolys];
     if(group.exists("control")){
       Setting & cp = group["control"];
       for(int i(0); i<mp->nLegendrePolys; i++){

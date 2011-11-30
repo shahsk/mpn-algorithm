@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "datatypes.h"
 #include "Build.h"
 #include "MPN2D.h"
 #include "MPNParams.h"
@@ -30,14 +31,16 @@ int main(){
   /*
   int nSamples = ceil(log(1/(mp->confidence))/
 				  log(1/(1-mp->level)));
-  int steps = ceil(static_cast<double>(mp->predictionHorizon)/
+  int steps = ceil(static_cast<mpn_float>(mp->predictionHorizon)/
 		   bot->getDt());
   */
 
-  double * bestPath,* bestControl, start[2];
+  mpn_float * bestPath,* bestControl, start[2],start_cpy[2];
   int steps,CHI;
   start[0] = STARTX*env->radius;
   start[1] = STARTY*env->radius;
+  start_cpy[0] = start[0];
+  start_cpy[1] = start[1];
 
   clock_t times[NTRIALS];
   float average = 0;
@@ -49,6 +52,8 @@ int main(){
     clock_t end_t = clock();
     times[i] = end_t-start_t;
     average += times[i]/static_cast<float>(NTRIALS);
+    start[0] = start_cpy[0];
+    start[1] = start_cpy[1];
     printf("Trial %i Cycles: %d \n",i,times[i]);
   }
   
