@@ -7,7 +7,7 @@ TODO:
     data structure will not change for the duration of a function. this will be
     useful for calls to MPNParams structures, they rarely ever change
 
-  MPN2D::incrementalCost:
+  MPN2D::incrementalCost: (Mark)
 	good canidate for loop unrolling
 	params->costWeights is accessed in an inner loop but never changes
 	multiplication of params->costWeights could be moved outside loop
@@ -16,11 +16,11 @@ TODO:
   MPN2D::nominalPath:
 	check for end condition doesn't need to happen at every point
 		
-  MPN2D::samplePath:
-	check for end condition doesn't need to happen at every point
+  MPN2D::samplePath: (Casey)
+	check for end condition doesn't need to happen at every point (Mark)
 	find out if there is a cheaper way to rotate vectors
 
-  Environment:
+  Environment: (Casey)
 	the functions in this class get called A LOT, esp. negatedGradient
 	many functions call obstacles.size() in the for-loop declaration
 	obstacles.size() never changes, neither do the positions of obstacles
