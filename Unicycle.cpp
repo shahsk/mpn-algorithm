@@ -20,8 +20,9 @@ Unicycle::Unicycle(mpn_float stepTime,mpn_float theta,mpn_float vmax,mpn_float o
 
 Unicycle::Unicycle(libconfig::Setting& group,mpn_float stepTime,unsigned int dim):
   Integrator(stepTime,2){
-  
-  this->startTheta = group["start_orientation"];
+  double tmp;
+  tmp = group["start_orientation"];
+  this->startTheta = tmp;
   this->currTheta = this->startTheta;
   
   this->dirVector[0] = cos(this->currTheta);
@@ -32,10 +33,14 @@ Unicycle::Unicycle(libconfig::Setting& group,mpn_float stepTime,unsigned int dim
   this->omegamax = -1;
   this->omegamin = -1;
 
-  group.lookupValue("max_velocity",this->vmax);
-  group.lookupValue("min_velocity",this->vmin);
-  group.lookupValue("max_angular_velocity",this->omegamax);
-  group.lookupValue("min_angular_velocity",this->omegamin);
+  group.lookupValue("max_velocity",tmp);
+  this->vmax = tmp;
+  group.lookupValue("min_velocity",tmp);
+  this->vmin = tmp;
+  group.lookupValue("max_angular_velocity",tmp);
+  this->omegamax = tmp;
+  group.lookupValue("min_angular_velocity",tmp);
+  this->omegamin = tmp;
 
 }
 

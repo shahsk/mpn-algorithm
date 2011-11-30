@@ -49,21 +49,27 @@ Environment::Environment(mpn_float * destination,mpn_float k_in,mpn_float rad,
 }
 
 Environment::Environment(libconfig::Setting & group,unsigned int dim){
+  double tmp;
   this->dim = dim;
-  this->k = group["potential_parameter"];
-  this->radius = group["radius"];
+  tmp = group["potential_parameter"];
+  this->k = tmp;
+  tmp = group["radius"];
+  this->radius = tmp;
   this->radpow2 = pow(this->radius,2);
   this->goal = new mpn_float[this->dim];
-  for(unsigned int i(0); i<this->dim; i++)
-    this->goal[i] = group["destination"][i];
-  
+  for(unsigned int i(0); i<this->dim; i++){
+    tmp = group["destination"][i];
+    this->goal[i] = tmp;
+  }
   if(group.exists("obstacles")){
     mpn_float tmpPos[this->dim],tmpR;
     for(unsigned int i(0); i<group["obstacles"].getLength(); i++){
       for(unsigned int j(0); j<this->dim; j++){
-	tmpPos[j] = group["obstacles"][i]["position"][j];
+	tmp = group["obstacles"][i]["position"][j];
+	tmpPos[j] = tmp;
       }
-      tmpR = group["obstacles"][i]["radius"];
+      tmp = group["obstacles"][i]["radius"];
+      tmpR = tmp;
       this->obstacles.push_back(new Obstacle(tmpPos,tmpR));
     }
   }
@@ -133,9 +139,11 @@ DipolarEnvironment::DipolarEnvironment(mpn_float * destination,mpn_float k_in,
 
 DipolarEnvironment::DipolarEnvironment(libconfig::Setting & group):
   Environment(group,2){
-  
-  this->epsilon = group["epsilon"];
-  this->goalOrientation = group["goal_orientation"];
+  double tmp;
+  tmp = group["epsilon"];
+  this->epsilon = tmp;
+  tmp = group["goal_orientation"];
+  this->goalOrientation = tmp;
   this->sinGoalOri = sin(this->goalOrientation);
   this->cosGoalOri = cos(this->goalOrientation);
 
