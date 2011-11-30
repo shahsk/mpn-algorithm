@@ -80,20 +80,27 @@ void buildIntegrator(Config * cfg,Integrator *& intg,int wsdim,mpn_float stepTim
 
 void buildMPNParams(Config * cfg,MPNParams * & mp){
   cfg->setAutoConvert(true);
-
+  double tmp; 
   if(cfg->exists(MPN_PARAMETERS)){
     mp = new MPNParams;
     Setting & group = cfg->lookup(MPN_PARAMETERS);
-    mp->wsDim = group["dimension"];
-    mp->tolerance = group["tolerance"];
+    tmp = group["dimension"];
+    mp->wsDim = tmp;
+    tmp = group["tolerance"];
+    mp->tolerance = tmp;
     mp->nLegendrePolys = group["num_legendre_polys"];
-    mp->confidence = group["confidence"];
-    mp->level = group["level"];
-    mp->predictionHorizon = group["prediction_horizon"];
-    mp->controlHorizon = group["control_horizon"];
+    tmp = group["confidence"];
+    mp->confidence = tmp;
+    tmp = group["level"];
+    mp->level = tmp;
+    tmp =  group["prediction_horizon"];
+    mp->predictionHorizon = tmp;
+    tmp = group["control_horizon"];
+    mp->controlHorizon = tmp;
 
     if(group.exists("start_time")){
-      mp->currentTime = group["start_time"];
+      tmp = group["start_time"];
+      mp->currentTime = tmp;
     }
     else{
       mp->currentTime = 0.0;
@@ -102,7 +109,8 @@ void buildMPNParams(Config * cfg,MPNParams * & mp){
     if(group.exists("cost_weights")){
       Setting & cw = group["cost_weights"];
       for(int i(0); i<3; i++){
-	mp->costWeights[i] = cw[i];
+	tmp = cw[i];
+	mp->costWeights[i] = tmp;
       }
     }
     else{
@@ -111,12 +119,11 @@ void buildMPNParams(Config * cfg,MPNParams * & mp){
     }
     
     mp->controlParameters = new mpn_float[mp->nLegendrePolys];
-    double tmp[mp->nLegendrePolys];
     if(group.exists("control")){
       Setting & cp = group["control"];
       for(int i(0); i<mp->nLegendrePolys; i++){
-	tmp[i] = cp[i];
-	mp->controlParameters[i] = static_cast<mpn_float>(tmp[i]);
+	tmp = cp[i];
+	mp->controlParameters[i] = static_cast<mpn_float>(tmp);
       }
     }
     else{
