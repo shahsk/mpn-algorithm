@@ -111,10 +111,12 @@ void buildMPNParams(Config * cfg,MPNParams * & mp){
     }
     
     mp->controlParameters = new mpn_float[mp->nLegendrePolys];
+    double tmp[mp->nLegendrePolys];
     if(group.exists("control")){
       Setting & cp = group["control"];
       for(int i(0); i<mp->nLegendrePolys; i++){
-	mp->controlParameters[i] = cp[i];
+	tmp[i] = cp[i];
+	mp->controlParameters[i] = static_cast<mpn_float>(tmp[i]);
       }
     }
     else{

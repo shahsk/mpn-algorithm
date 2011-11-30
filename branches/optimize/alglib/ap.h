@@ -559,20 +559,9 @@ extern const double ae_minrealnumber;
 extern const double ae_pi;
 */
 #define ae_pi 3.1415926535897932384626433832795
-
-#ifdef HALF_PRECISION
-
-#define ae_machineepsilon 5E-8
-#define ae_maxrealnumber  1E38
-#define ae_minrealnumber  1E-38
-
-#else
-
 #define ae_machineepsilon 5E-16
 #define ae_maxrealnumber  1E300
 #define ae_minrealnumber  1E-300
-
-#endif
 
 /************************************************************************
 RComm functions
