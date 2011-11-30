@@ -1,21 +1,24 @@
 #ifndef __INTEGRATOR_H
 #define __INTEGRATOR_H
 
+#include "datatypes.h"
+
 //Point dynamics and euler integration is given by default
 //Omit an integrator class in cfg files to get this integrator
 class Integrator{
  protected:
   int wsDim;
-  double dt;
+  mpn_float dt;
   unsigned int i;
  public:
   //For now, workspace dim is always 2
-  Integrator(double stepTime,unsigned int workspaceDim);
+  Integrator(mpn_float stepTime,unsigned int workspaceDim);
 
-  double getDt();
+  mpn_float getDt();
 
   //Integrate 1 step from current state
-  virtual void step(double * wsState,double * wsGrad,double * wsNewState);
+  virtual void step(mpn_float * wsState,mpn_float * wsGrad,
+		    mpn_float * wsNewState);
 
   //Reset the internal state of this integrator
   virtual void reset();

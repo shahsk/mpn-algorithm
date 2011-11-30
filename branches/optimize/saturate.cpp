@@ -1,6 +1,7 @@
+#include "datatypes.h"
 #include "saturate.h"
 #include "math.h"
-void saturate(double * val,double upper,double lower){
+void saturate(mpn_float * val,mpn_float upper,mpn_float lower){
   if(fabs(*val) > upper && upper > 0){
     *val = sign(*val)*upper;
   }
@@ -10,7 +11,7 @@ void saturate(double * val,double upper,double lower){
 
 }
 
-double sign(double num){
+mpn_float sign(mpn_float num){
   if(num > 0)
     return 1.0;
   else if(num < 0)

@@ -1,6 +1,8 @@
 #ifndef __MPNPARAMS_H
 #define __MPNPARAMS_H
 
+#include "datatypes.h"
+
 #define MPN_PARAMETERS "mpn_parameters"
 
 /*
@@ -27,10 +29,10 @@
 struct MPNParams{
   unsigned int wsDim;
   unsigned int nLegendrePolys;
-  double * controlParameters;
-  double confidence,level,predictionHorizon,controlHorizon,currentTime;
-  double costWeights[3];
-  double tolerance;
+  mpn_float * controlParameters;
+  mpn_float confidence,level,predictionHorizon,controlHorizon,currentTime;
+  mpn_float costWeights[3];
+  mpn_float tolerance;
 };
 
 #endif

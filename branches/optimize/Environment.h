@@ -12,6 +12,7 @@
 #define ENVIRONMENT "environment"
 #define DIPLOAR_ENVIRONMENT "dipolar_environment"
 
+#include "datatypes.h"
 #include "Obstacle.h"
 #include <libconfig.h++>
 #include <vector>
@@ -37,29 +38,29 @@
 */
 class Environment {//assumed to be centered at 0,0
  protected:
-  double k;//tuning parameter for potential field
+  mpn_float k;//tuning parameter for potential field
 
   unsigned int dim;
   
-  std::vector<double> obstacleBetaValues;
-  double envBeta;
-  double radpow2;
+  std::vector<mpn_float> obstacleBetaValues;
+  mpn_float envBeta;
+  mpn_float radpow2;
  public:
-  double radius;//size of the workspace
-  double * goal;
+  mpn_float radius;//size of the workspace
+  mpn_float * goal;
   std::vector<Obstacle *> obstacles;
 
-  Environment(double * destination,double k_in,double rad,unsigned int dim = 2);
+  Environment(mpn_float * destination,mpn_float k_in,mpn_float rad,unsigned int dim = 2);
   //Alternate constructor to use config files, pass in the environment group
   Environment(libconfig::Setting & group,unsigned int dim = 2);
 
-  double calculateBeta(double * q);//return beta of the whole workspace, including obstacles. also refreshes internal beta values
-  double calculateBeta0(double * q); //return just beta value of the workspace
+  mpn_float calculateBeta(mpn_float * q);//return beta of the whole workspace, including obstacles. also refreshes internal beta values
+  mpn_float calculateBeta0(mpn_float * q); //return just beta value of the workspace
   
   //puts the negated gradient at q in answer
-  virtual void negatedGradient(double * q,double * answer);
+  virtual void negatedGradient(mpn_float * q,mpn_float * answer);
   //returns the value of the potential field at a given point
-  virtual double potentialField(double * q);
+  virtual mpn_float potentialField(mpn_float * q);
   
   virtual ~Environment();
 };
@@ -93,15 +94,15 @@ class Environment {//assumed to be centered at 0,0
 */
 class DipolarEnvironment: public Environment{
  private:
-  double epsilon,goalOrientation,sinGoalOri,cosGoalOri;
+  mpn_float epsilon,goalOrientation,sinGoalOri,cosGoalOri;
 
  public:
-  DipolarEnvironment(double * destination,double k_in,double rad,
-		     double ep,double goalOri);
+  DipolarEnvironment(mpn_float * destination,mpn_float k_in,mpn_float rad,
+		     mpn_float ep,mpn_float goalOri);
   DipolarEnvironment(libconfig::Setting & group);
 
-  void negatedGradient(double * q,double * answer);
-  double potentialField(double * q);
+  void negatedGradient(mpn_float * q,mpn_float * answer);
+  mpn_float potentialField(mpn_float * q);
 
 };
 

@@ -5,6 +5,7 @@
  *      Author: nlacock
  */
 
+#include "datatypes.h"
 #include "MPN2D.h"
 #include "Integrator.h"
 #include "Unicycle.h"
@@ -17,40 +18,40 @@
 
 #define MAX_TRIES 10000
 
-double inline noExtraCost(Environment * e,double * state){return 0.;}
+mpn_float inline noExtraCost(Environment * e,mpn_float * state){return 0.;}
 /*
-//Allocates a given number of double[2] points
-double ** allocatePoints(int npoints){
-	double ** output = new double*[npoints];
+//Allocates a given number of mpn_float[2] points
+mpn_float ** allocatePoints(int npoints){
+	mpn_float ** output = new mpn_float*[npoints];
 	for(int i(0); i<npoints; i++)
-		output[i] = new double[2];
+		output[i] = new mpn_float[2];
 	return output;
 }
 */
-double *allocatePoints(int npoints){
+mpn_float *allocatePoints(int npoints){
   //evens are the x's, odds are the y's,  i.e. x1, y1, x2, y2, ...
-  return new double[npoints*2];
+  return new mpn_float[npoints*2];
 }
 /*
-//Deallocates a given number of double[2] points, meant to be used in conjunction with allocatePoints
-void cleanupPoints(double ** pointArray,int npoints){
+//Deallocates a given number of mpn_float[2] points, meant to be used in conjunction with allocatePoints
+void cleanupPoints(mpn_float ** pointArray,int npoints){
 	for(int i(0); i<npoints; i++)
 		delete [] pointArray[i];
 	delete [] pointArray;
 }
 */
-void cleanupPoints(double *pointArray){
+void cleanupPoints(mpn_float *pointArray){
   delete [] pointArray;
 }
 
 /*
 //Size is the index of the path to use, usually the number of steps
-double inline terminalCost(Environment * e,double ** path,int size){
+mpn_float inline terminalCost(Environment * e,mpn_float ** path,int size){
 	return e->potentialField(path[size-1]);
 }
 */
 
-double inline terminalCost(Environment *e, double * path, int size)
+mpn_float inline terminalCost(Environment *e, mpn_float * path, int size)
 {
   //Send a pointer to section of array with desired x/y
   return e->potentialField(&path[2*(size-1)]);
@@ -59,10 +60,10 @@ double inline terminalCost(Environment *e, double * path, int size)
 
 //Size should be the actual size of path and controlPath
 //TODO: Terminal cost should have a different weight as well
-double incrementalCost(Environment * e, MPNParams * params,double ** path, double ** controlPath, double dt, int size, double(*extraCost)(Environment *,double *)){
+mpn_float incrementalCost(Environment * e, MPNParams * params,mpn_float ** path, mpn_float ** controlPath, mpn_float dt, int size, mpn_float(*extraCost)(Environment *,mpn_float *)){
   
   //compute the value of the cost function at every point
-  double costFunction[size];
+  mpn_float costFunction[size];
   for(int i(0); i<size; i++){
     costFunction[i] = params->costWeights[0]*gamma(path[i],e->goal,DIM) +
       params->costWeights[1]*gamma(controlPath[i],DIM);
@@ -75,7 +76,7 @@ double incrementalCost(Environment * e, MPNParams * params,double ** path, doubl
   }
 
   //do a cumulative integration of the cost function (wrt time) using the trapezoidal method
-  double cost = costFunction[0] + costFunction[size-1];
+  mpn_float cost = costFunction[0] + costFunction[size-1];
   for(int i(1); i<size-1; i++){
     cost += 2*costFunction[i];
   }
@@ -86,10 +87,10 @@ double incrementalCost(Environment * e, MPNParams * params,double ** path, doubl
 
 //Size should be the actual size of path and controlPath
 //TODO: Terminal cost should have a different weight as well
-double incrementalCost(Environment * e, MPNParams * params,double * path, double * controlPath, double dt, int size, double(*extraCost)(Environment *,double *)){
+mpn_float incrementalCost(Environment * e, MPNParams * params,mpn_float * path, mpn_float * controlPath, mpn_float dt, int size, mpn_float(*extraCost)(Environment *,mpn_float *)){
   
   //compute the value of the cost function at every point
-  double costFunction[size];
+  mpn_float costFunction[size];
   for(int i(0); i<size; i++){
     costFunction[i] = params->costWeights[0]*gamma(&path[2*i],e->goal,DIM) +
       params->costWeights[1]*gamma(&controlPath[2*i],DIM);
@@ -102,7 +103,7 @@ double incrementalCost(Environment * e, MPNParams * params,double * path, double
   }
 
   //do a cumulative integration of the cost function (wrt time) using the trapezoidal method
-  double cost = costFunction[0] + costFunction[size-1];
+  mpn_float cost = costFunction[0] + costFunction[size-1];
   for(int i(1); i<size-1; i++){
     cost += 2*costFunction[i];
   }
@@ -112,12 +113,12 @@ double incrementalCost(Environment * e, MPNParams * params,double * path, double
 
   /*
 //Puts the nominal controlPath and the path in the given pointers
-int nominalPath(Environment * e,Integrator * intgr,double** controlPath, double ** path,double * start,int steps,Integrator *& atCHI,MPNParams * params){
-  double * current = start;
+int nominalPath(Environment * e,Integrator * intgr,mpn_float** controlPath, mpn_float ** path,mpn_float * start,int steps,Integrator *& atCHI,MPNParams * params){
+  mpn_float * current = start;
   int CHI = -1;
   Integrator * tmpPtr = NULL;
   if(params != NULL){
-    CHI = ceil(static_cast<double>(params->controlHorizon/intgr->getDt()));
+    CHI = ceil(static_cast<mpn_float>(params->controlHorizon/intgr->getDt()));
   }
 
 
@@ -156,12 +157,12 @@ int nominalPath(Environment * e,Integrator * intgr,double** controlPath, double 
 */
 
 //Puts the nominal controlPath and the path in the given pointers
-int nominalPath(Environment * e,Integrator * intgr,double* controlPath, double * path,double * start,int steps,Integrator *& atCHI,MPNParams * params){
-  double * current = start;
+int nominalPath(Environment * e,Integrator * intgr,mpn_float* controlPath, mpn_float * path,mpn_float * start,int steps,Integrator *& atCHI,MPNParams * params){
+  mpn_float * current = start;
   int CHI = -1;
   Integrator * tmpPtr = NULL;
   if(params != NULL){
-    CHI = ceil(static_cast<double>(params->controlHorizon/intgr->getDt()));
+    CHI = ceil(static_cast<mpn_float>(params->controlHorizon/intgr->getDt()));
   }
 
 
@@ -199,13 +200,13 @@ int nominalPath(Environment * e,Integrator * intgr,double* controlPath, double *
 }
 
 //Puts a sample controlPath and path into the given variables, given a set of parameters
-int samplePath(Environment * e, Integrator * intgr,MPNParams * params,double* controlPath, double * path,double * start,int steps,Integrator *& atCHI){
-  double * current = start,angPerturb,tmpSin,tmpCos;
-  double * currentGrad;
-  double currentPolyTime = params->currentTime/params->predictionHorizon;
-  double polyDt = intgr->getDt()/params->predictionHorizon;
-  int CHI = ceil(static_cast<double>(params->controlHorizon/intgr->getDt()));
-  double tmpGrad[2];
+int samplePath(Environment * e, Integrator * intgr,MPNParams * params,mpn_float* controlPath, mpn_float * path,mpn_float * start,int steps,Integrator *& atCHI){
+  mpn_float * current = start,angPerturb,tmpSin,tmpCos;
+  mpn_float * currentGrad;
+  mpn_float currentPolyTime = params->currentTime/params->predictionHorizon;
+  mpn_float polyDt = intgr->getDt()/params->predictionHorizon;
+  int CHI = ceil(static_cast<mpn_float>(params->controlHorizon/intgr->getDt()));
+  mpn_float tmpGrad[2];
   Integrator * tmpPtr = NULL;
 
   e->negatedGradient(current,&controlPath[0]);
@@ -244,7 +245,7 @@ int samplePath(Environment * e, Integrator * intgr,MPNParams * params,double* co
     for(unsigned int j(0); j<params->nLegendrePolys; j++){
       if(params->controlParameters[j] != 0)
 	angPerturb += params->controlParameters[j]*
-	  alglib::legendrecalculate(j,currentPolyTime);
+	  alglib::legendrecalculate(j,static_cast<double>(currentPolyTime));
     }
     angPerturb*=(M_PI);
 
@@ -264,52 +265,52 @@ int samplePath(Environment * e, Integrator * intgr,MPNParams * params,double* co
   return steps;
 }
 
-bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, double *&bestPath, double *& bestControl, int & steps, int & controlHorizonIndex,double * start){
+bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, mpn_float *&bestPath, mpn_float *& bestControl, int & steps, int & controlHorizonIndex,mpn_float * start){
   
   //ln(a) = log(a)/log(e) -> ln(a)/ln(b) = log(a)/log(b)
-  double nSamples = log(1/(params->confidence))/log(1/(1-params->level));
+  mpn_float nSamples = log(1/(params->confidence))/log(1/(1-params->level));
   //std::cout << "samples: " << nSamples << std::endl;
-  steps = ceil(static_cast<double>(params->predictionHorizon)/intgr->getDt());
-  controlHorizonIndex = ceil(static_cast<double>(params->controlHorizon/
+  steps = ceil(static_cast<mpn_float>(params->predictionHorizon)/intgr->getDt());
+  controlHorizonIndex = ceil(static_cast<mpn_float>(params->controlHorizon/
 						 intgr->getDt()));
   
-  double startCost = e->potentialField(start);
+  mpn_float startCost = e->potentialField(start);
   
-  double * nominal = allocatePoints(steps);
-  double * nominalControl = allocatePoints(steps);
+  mpn_float * nominal = allocatePoints(steps);
+  mpn_float * nominalControl = allocatePoints(steps);
   Integrator * optimalEndIntegrator,* tempPtr = intgr->copy();
   int bestSteps=nominalPath(e,intgr,nominalControl,nominal,start,steps,optimalEndIntegrator,params);
   int bestCHI=bestSteps < controlHorizonIndex ? bestSteps : controlHorizonIndex;
 
   //initialize with nominal values
-  double * optimalPath = allocatePoints(steps);
+  mpn_float * optimalPath = allocatePoints(steps);
   for(int i(0); i<2*steps; i+=2){
     optimalPath[i] = nominal[i];
     optimalPath[i+1] = nominal[i+1];
   }
-  double * optimalControl = allocatePoints(steps);
+  mpn_float * optimalControl = allocatePoints(steps);
   for(int i(0); i<2*steps; i+=2){
     optimalControl[i] = nominalControl[i];
     optimalControl[i+1] = nominalControl[i+1];
   }
 
-  double incrCost = incrementalCost(e,params,nominal,nominalControl,
+  mpn_float incrCost = incrementalCost(e,params,nominal,nominalControl,
 				    intgr->getDt(),steps);
-  double termCost = terminalCost(e,nominal,steps);
-  double optimalCost = incrCost + termCost;
+  mpn_float termCost = terminalCost(e,nominal,steps);
+  mpn_float optimalCost = incrCost + termCost;
   
   
-  double optimalParams[params->nLegendrePolys];
+  mpn_float optimalParams[params->nLegendrePolys];
   for(unsigned int i(0); i<params->nLegendrePolys;i++){optimalParams[i]=0;}
   
-  double currentCost,currentTerminal,currentControlHorizonCost,currentFinalOri;
+  mpn_float currentCost,currentTerminal,currentControlHorizonCost,currentFinalOri;
   int currSteps,currCHI;
-  double * currentPath = allocatePoints(steps);
-  double * currentControlPath = allocatePoints(steps);
+  mpn_float * currentPath = allocatePoints(steps);
+  mpn_float * currentControlPath = allocatePoints(steps);
   
   int acceptedSoFar = 1,tries = 0;
-  double tmpl = 1.0/params->nLegendrePolys;
-  double gammaCost = gamma(start,e->goal,2);
+  mpn_float tmpl = 1.0/params->nLegendrePolys;
+  mpn_float gammaCost = gamma(start,e->goal,2);
   do{
     intgr->reset();
     //generate control inputs on +/- 1/(number of inputs)
@@ -396,52 +397,52 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
   return arrived;
 }
 /*
-bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, double **&bestPath, double **& bestControl, int & steps, int & controlHorizonIndex,double * start){
+bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, mpn_float **&bestPath, mpn_float **& bestControl, int & steps, int & controlHorizonIndex,mpn_float * start){
   
   //ln(a) = log(a)/log(e) -> ln(a)/ln(b) = log(a)/log(b)
-  double nSamples = log(1/(params->confidence))/log(1/(1-params->level));
+  mpn_float nSamples = log(1/(params->confidence))/log(1/(1-params->level));
   //std::cout << "samples: " << nSamples << std::endl;
-  steps = ceil(static_cast<double>(params->predictionHorizon)/intgr->getDt());
-  controlHorizonIndex = ceil(static_cast<double>(params->controlHorizon/
+  steps = ceil(static_cast<mpn_float>(params->predictionHorizon)/intgr->getDt());
+  controlHorizonIndex = ceil(static_cast<mpn_float>(params->controlHorizon/
 						 intgr->getDt()));
   
-  double startCost = e->potentialField(start);
+  mpn_float startCost = e->potentialField(start);
   
-  double ** nominal = allocatePoints(steps);
-  double ** nominalControl = allocatePoints(steps);
+  mpn_float ** nominal = allocatePoints(steps);
+  mpn_float ** nominalControl = allocatePoints(steps);
   Integrator * optimalEndIntegrator,* tempPtr = intgr->copy();
   int bestSteps=nominalPath(e,intgr,nominalControl,nominal,start,steps,optimalEndIntegrator,params);
   int bestCHI=bestSteps < controlHorizonIndex ? bestSteps : controlHorizonIndex;
 
   //initialize with nominal values
-  double ** optimalPath = allocatePoints(steps);
+  mpn_float ** optimalPath = allocatePoints(steps);
   for(int i(0); i<steps; i++){
     optimalPath[i][0] = nominal[i][0];
     optimalPath[i][1] = nominal[i][1];
   }
-  double ** optimalControl = allocatePoints(steps);
+  mpn_float ** optimalControl = allocatePoints(steps);
   for(int i(0); i<steps; i++){
     optimalControl[i][0] = nominalControl[i][0];
     optimalControl[i][1] = nominalControl[i][1];
   }
 
-  double incrCost = incrementalCost(e,params,nominal,nominalControl,
+  mpn_float incrCost = incrementalCost(e,params,nominal,nominalControl,
 				    intgr->getDt(),steps);
-  double termCost = terminalCost(e,nominal,steps);
-  double optimalCost = incrCost + termCost;
+  mpn_float termCost = terminalCost(e,nominal,steps);
+  mpn_float optimalCost = incrCost + termCost;
   
   
-  double optimalParams[params->nLegendrePolys];
+  mpn_float optimalParams[params->nLegendrePolys];
   for(unsigned int i(0); i<params->nLegendrePolys;i++){optimalParams[i]=0;}
   
-  double currentCost,currentTerminal,currentControlHorizonCost,currentFinalOri;
+  mpn_float currentCost,currentTerminal,currentControlHorizonCost,currentFinalOri;
   int currSteps,currCHI;
-  double ** currentPath = allocatePoints(steps);
-  double ** currentControlPath = allocatePoints(steps);
+  mpn_float ** currentPath = allocatePoints(steps);
+  mpn_float ** currentControlPath = allocatePoints(steps);
   
   int acceptedSoFar = 1,tries = 0;
-  double tmpl = 1.0/params->nLegendrePolys;
-  double gammaCost = gamma(start,e->goal,2);
+  mpn_float tmpl = 1.0/params->nLegendrePolys;
+  mpn_float gammaCost = gamma(start,e->goal,2);
   do{
     intgr->reset();
     //generate control inputs on +/- 1/(number of inputs)

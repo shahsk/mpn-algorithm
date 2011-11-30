@@ -1,13 +1,14 @@
+#include "datatypes.h"
 #include "Integrator.h"
 
-Integrator::Integrator(double stepTime,unsigned int workspaceDim){
+Integrator::Integrator(mpn_float stepTime,unsigned int workspaceDim){
     this->wsDim = workspaceDim;
     this->dt = stepTime;
 }
 
-double Integrator::getDt(){return this->dt;}
+mpn_float Integrator::getDt(){return this->dt;}
 
-void Integrator::step(double * wsState,double * wsGrad,double * wsNewState){
+void Integrator::step(mpn_float * wsState,mpn_float * wsGrad,mpn_float * wsNewState){
 #ifndef DIM2
   for(i = 0; i < this->wsDim; i++){
     wsNewState[i] = wsState[i] + wsGrad[i]*this->dt;

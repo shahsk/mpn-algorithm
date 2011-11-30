@@ -1,6 +1,7 @@
 #ifndef __UNICYCLE_H
 #define __UNICYCLE_H
 
+#include "datatypes.h"
 #include "Integrator.h"
 #include <libconfig.h++>
 
@@ -39,27 +40,27 @@ class Unicycle: public Integrator{
 
 
   //Constraints
-  double vmax,vmin,omegamax,omegamin;
+  mpn_float vmax,vmin,omegamax,omegamin;
 
-  double dirVector[2];
+  mpn_float dirVector[2];
 
   //Temporaries
-  double vdot,v,omega,tmpSin,tmpCos;
+  mpn_float vdot,v,omega,tmpSin,tmpCos;
 
-  void satv(double * v);
-  void satw(double * w);
-  void normalizeTheta(double * theta); 
+  void satv(mpn_float * v);
+  void satw(mpn_float * w);
+  void normalizeTheta(mpn_float * theta); 
 
  public:
-  double startTheta;
-  double currTheta;
-  Unicycle(double stepTime,double theta, double vmax = -1,double omegamax = -1,
-	   double vmin = -1,double omegamin = -1);
+  mpn_float startTheta;
+  mpn_float currTheta;
+  Unicycle(mpn_float stepTime,mpn_float theta, mpn_float vmax = -1,mpn_float omegamax = -1,
+	   mpn_float vmin = -1,mpn_float omegamin = -1);
   //Dim is ignored, Unicycle is 2D only
-  Unicycle(libconfig::Setting& group,double stepTime,unsigned int dim);
+  Unicycle(libconfig::Setting& group,mpn_float stepTime,unsigned int dim);
 
   //Euler integration
-  void step(double * wsState,double * wsGrad,double * wsNewState);
+  void step(mpn_float * wsState,mpn_float * wsGrad,mpn_float * wsNewState);
 
   //Reset the internal state of this integrator
   void reset();
