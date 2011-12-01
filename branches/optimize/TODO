@@ -43,3 +43,9 @@ DONE:
   x1,y1,x2,y2...  I also had to update a couple loops and access functions so
   that the correct values were passed in.  It compiles an runs with some
   improvement under time_trial, but I have no idea if it runs correctly.
+
+  11/30
+  Worked on optimizations in nominal and sample path.  I removed constants that
+  were constantly being checked against in the loops.  I also tried to reduce
+  the number of times we checked the end condition, but that caused a large
+  performance hit.  I commented it out for now.

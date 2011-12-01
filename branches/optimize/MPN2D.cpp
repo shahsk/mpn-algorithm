@@ -72,14 +72,15 @@ int nominalPath(Environment * e,Integrator * intgr,mpn_float* controlPath, mpn_f
     CHI = ceil(static_cast<mpn_float>(params->controlHorizon/intgr->getDt()));
   }
 
-
+  float tol = pow(params->tolerance,2);
+  mpn_float * goal = e->goal;
   for(int i(0); i<steps; i++){
 
     /*Check to see if we are close enough to the destination
       NOTE: This doesn't have to happen every point, maybe every 10
      */
     if(params != NULL){
-      if(gamma(e->goal,current,DIM) < pow(params->tolerance,2)){
+      if(gamma(goal,current,DIM) < tol){
 	if(tmpPtr == NULL){
 	  tmpPtr = intgr->copy();
 	  tmpPtr->saveState();
@@ -120,12 +121,20 @@ int samplePath(Environment * e, Integrator * intgr,MPNParams * params,mpn_float*
   intgr->step(current,&controlPath[0],&path[0]);
   current = &path[0];
 
+  mpn_float tol = pow (params->tolerance, 2);
+  mpn_float * goal = e->goal;
+  int polys = params->nLegendrePolys;
+
   for(int i(1); i<steps; i++){
 
     /*Check to see if we are close enough to the destination
       NOTE: This doesn't have to happen every point, maybe every 10
-     */
-    if(gamma(current,e->goal,DIM) < pow(params->tolerance,2)){
+    i&31 == 0 should make it check less, but it completely destroys
+    performace on my VM
+    */
+
+
+    if(gamma(current,goal,DIM) < tol){ //i&31 == 0
       if(tmpPtr == NULL){
 	tmpPtr = intgr->copy();
 	tmpPtr->saveState();
@@ -149,7 +158,7 @@ int samplePath(Environment * e, Integrator * intgr,MPNParams * params,mpn_float*
     //angPerturb = anglePerturb(params,currentPolyTime);
 
     angPerturb = 0;
-    for(unsigned int j(0); j<params->nLegendrePolys; j++){
+    for(unsigned int j(0); j<polys; j++){
       if(params->controlParameters[j] != 0)
 	angPerturb += params->controlParameters[j]*
 	  alglib::legendrecalculate(j,static_cast<double>(currentPolyTime));
