@@ -17,6 +17,7 @@
 #include <iostream>
 
 #define MAX_TRIES 10000
+#define terminalCost(e, path, size) ( e->potentialField(&path[2*(size-1)]) )
 
 mpn_float noExtraCost(Environment * e,mpn_float * state){return 0.;}
 
@@ -28,16 +29,16 @@ mpn_float *allocatePoints(int npoints){
 void cleanupPoints(mpn_float *pointArray){
   delete [] pointArray;
 }
-
+/*
 mpn_float inline terminalCost(Environment *e, mpn_float * path, int size)
 {
   //Send a pointer to section of array with desired x/y
   return e->potentialField(&path[2*(size-1)]);
 }
-
+*/
 //Size should be the actual size of path and controlPath
 //TODO: Terminal cost should have a different weight as well
-mpn_float incrementalCost(Environment * e, MPNParams * params,mpn_float * path, mpn_float * controlPath, mpn_float dt, int size, mpn_float(*extraCost)(Environment *,mpn_float *)){
+mpn_float incrementalCost(Environment * e, const MPNParams * params,mpn_float * path, mpn_float * controlPath, mpn_float dt, int size, mpn_float(*extraCost)(Environment *,mpn_float *)){
   
   //compute the value of the cost function at every point
   mpn_float costFunction[size];
@@ -64,7 +65,7 @@ mpn_float incrementalCost(Environment * e, MPNParams * params,mpn_float * path, 
 }
 
 //Puts the nominal controlPath and the path in the given pointers
-int nominalPath(Environment * e,Integrator * intgr,mpn_float* controlPath, mpn_float * path,mpn_float * start,int steps,Integrator *& atCHI,MPNParams * params){
+int nominalPath(Environment * e,Integrator * intgr,mpn_float* controlPath, mpn_float * path,mpn_float * start,int steps,Integrator *& atCHI,const MPNParams * params){
   mpn_float * current = start;
   int CHI = -1;
   Integrator * tmpPtr = NULL;
@@ -108,7 +109,7 @@ int nominalPath(Environment * e,Integrator * intgr,mpn_float* controlPath, mpn_f
 }
 
 //Puts a sample controlPath and path into the given variables, given a set of parameters
-int samplePath(Environment * e, Integrator * intgr,MPNParams * params,mpn_float* controlPath, mpn_float * path,mpn_float * start,int steps,Integrator *& atCHI){
+int samplePath(Environment * e, Integrator * intgr,const MPNParams * params,mpn_float* controlPath, mpn_float * path,mpn_float * start,int steps,Integrator *& atCHI){
   mpn_float * current = start,angPerturb,tmpSin,tmpCos;
   mpn_float * currentGrad;
   mpn_float currentPolyTime = params->currentTime/params->predictionHorizon;
@@ -192,19 +193,19 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
   
   mpn_float startCost = e->potentialField(start);
   
-  mpn_float * nominal = allocatePoints(steps);
-  mpn_float * nominalControl = allocatePoints(steps);
+  mpn_float * nominal = new mpn_float[2*steps];
+  mpn_float * nominalControl = new mpn_float[2*steps];
   Integrator * optimalEndIntegrator,* tempPtr = intgr->copy();
   int bestSteps=nominalPath(e,intgr,nominalControl,nominal,start,steps,optimalEndIntegrator,params);
   int bestCHI=bestSteps < controlHorizonIndex ? bestSteps : controlHorizonIndex;
 
   //initialize with nominal values
-  mpn_float * optimalPath = allocatePoints(steps);
+  mpn_float * optimalPath = new mpn_float[2*steps];
   for(int i(0); i<2*steps; i+=2){
     optimalPath[i] = nominal[i];
     optimalPath[i+1] = nominal[i+1];
   }
-  mpn_float * optimalControl = allocatePoints(steps);
+  mpn_float * optimalControl = new mpn_float[2*steps];
   for(int i(0); i<2*steps; i+=2){
     optimalControl[i] = nominalControl[i];
     optimalControl[i+1] = nominalControl[i+1];
@@ -221,8 +222,8 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
   
   mpn_float currentCost,currentTerminal,currentControlHorizonCost,currentFinalOri;
   int currSteps,currCHI;
-  mpn_float * currentPath = allocatePoints(steps);
-  mpn_float * currentControlPath = allocatePoints(steps);
+  mpn_float * currentPath = new mpn_float[2*steps];
+  mpn_float * currentControlPath = new mpn_float[2*steps];
   
   int acceptedSoFar = 1,tries = 0;
   mpn_float tmpl = 1.0/params->nLegendrePolys;
@@ -299,10 +300,11 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
 
   intgr = optimalEndIntegrator;
 
-  cleanupPoints(nominal);
-  cleanupPoints(currentPath);
-  cleanupPoints(nominalControl);
-  cleanupPoints(currentControlPath);
+  delete [] nominal;
+  delete [] currentPath;
+  delete [] nominalControl;
+  delete [] currentControlPath;
+
 
   //std::cout << "Alleged angle: " << dynamic_cast<Unicycle *>(optimalEndIntegrator)->currTheta << std::endl;
   //std::cout << "Angle from x: " << atan2(bestPath[bestCHI+1][1]-bestPath[bestCHI][1],bestPath[bestCHI+1][0]-bestPath[bestCHI][0]) << std::endl;

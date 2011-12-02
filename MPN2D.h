@@ -22,21 +22,21 @@ mpn_float * allocatePoints(int npoints);
 
 //Deallocates a given number of mpn_float[2] points, meant to be used in conjunction with allocatePoints
 void cleanupPoints(mpn_float * pointArray,int npoints);
-
+/*
 //Returns the value of the potential field at the endpoint of a given trajectory
 mpn_float inline terminalCost(Environment * e,mpn_float * path,int size);
-
+*/
 //Dummy cost function that always returns 0
 mpn_float noExtraCost(Environment * e,mpn_float * state);
 
 //Returns the cost of a given path and control trajectory, applies the given cost function
-mpn_float incrementalCost(Environment * e, MPNParams * params,mpn_float * path, mpn_float * controlPath, mpn_float dt, int size, mpn_float(*extraCost)(Environment *,mpn_float *) = noExtraCost);
+mpn_float incrementalCost(Environment * e, const MPNParams * params,mpn_float * path, mpn_float * controlPath, mpn_float dt, int size, mpn_float(*extraCost)(Environment *,mpn_float *) = noExtraCost);
 
 //Puts the nominal controlPath and the path in the given variables
-int nominalPath(Environment * e,Integrator * intgr,mpn_float* controlPath, mpn_float * path,mpn_float * start,int steps,Integrator *& atCHI,MPNParams * params = NULL);
+int nominalPath(Environment * e,Integrator * intgr,mpn_float* controlPath, mpn_float * path,mpn_float * start,int steps,Integrator *& atCHI,const MPNParams * params = NULL);
 
 //Puts a sample controlPath and path into the given variables, given a set of parameters
-int samplePath(Environment * e, Integrator * intgr,MPNParams * params,mpn_float* controlPath, mpn_float * path,mpn_float * start,int steps,Integrator *& atCHI);
+int samplePath(Environment * e, Integrator * intgr,const MPNParams * params,mpn_float* controlPath, mpn_float * path,mpn_float * start,int steps,Integrator *& atCHI);
 
 /* Runs the bulk of the algorithm.
  * 1. compute the nominal path
