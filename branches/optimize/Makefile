@@ -13,8 +13,8 @@ CFLAGS = -O3 -DDIM2 -DSINGLE_PRECISION
 
 all: 
 
-time_trial: time_trial.cpp $(OBJS) libalglib.so
-	g++ $< $(OBJS) -o $@ -lconfig++ -lalglib $(LIBPATH) $(INCLUDE) $(CFLAGS)
+time_trial: time_trial.cpp $(OBJS) alglib/specialfunctions.o alglib/ap.o
+	g++ $< $(OBJS) alglib/specialfunctions.o alglib/ap.o -o $@ -lconfig++ -lalglib $(LIBPATH) $(INCLUDE) $(CFLAGS)
 
 test: test.cpp $(OBJS) vicon_multi.o libalglib.so
 	g++ `pkg-config --cflags playerc++` $< $(OBJS) vicon_multi.o -o $@ `pkg-config --libs playerc++` -lViconDataStreamSDK_CPP -lconfig++ -lalglib $(LIBPATH) $(INCLUDE)

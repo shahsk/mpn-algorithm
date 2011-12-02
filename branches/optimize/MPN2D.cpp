@@ -134,7 +134,7 @@ int samplePath(Environment * e, Integrator * intgr,MPNParams * params,mpn_float*
     */
 
 
-    if(gamma(current,goal,DIM) < tol){ //i&31 == 0
+    if(!(i&31) && gamma(current,goal,DIM) < tol){ //i&31 == 0
       if(tmpPtr == NULL){
 	tmpPtr = intgr->copy();
 	tmpPtr->saveState();
