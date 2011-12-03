@@ -49,3 +49,9 @@ DONE:
   were constantly being checked against in the loops.  I also tried to reduce
   the number of times we checked the end condition, but that caused a large
   performance hit.  I commented it out for now.
+
+  12/3
+  Unrolled a loop in negated gradient and moved size to be stored within
+  Environment so that it wouldn't be necessary to call obstacles.size()
+  repeatedly.  I also adjusted the alignment of variables in Environment 
+  to the largest to smallest paradigm.

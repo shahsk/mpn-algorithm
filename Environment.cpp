@@ -26,9 +26,9 @@ mpn_float Environment::calculateBeta0(mpn_float * q){
 //Defined as (r_0^2 - ||q-q_0||^2 ) * (product of all obstacle beta values)
 mpn_float Environment::calculateBeta(mpn_float * q){
 	mpn_float beta = calculateBeta0(q);
-	if(obstacleBetaValues.size() != obstacles.size())
-		obstacleBetaValues.resize(obstacles.size());
-	for(unsigned int i(0); i<obstacles.size(); i++){
+	if(obstacleBetaValues.size() != size)
+		obstacleBetaValues.resize(size);
+	for(unsigned int i(0); i<size; i++){
 		obstacleBetaValues[i] = obstacles[i]->calculateBeta(q);
 		beta *= obstacleBetaValues[i];
 	}
@@ -71,6 +71,7 @@ Environment::Environment(libconfig::Setting & group,unsigned int dim){
       tmp = group["obstacles"][i]["radius"];
       tmpR = tmp;
       this->obstacles.push_back(new Obstacle(tmpPos,tmpR));
+      this->size = obstacles.size();
     }
   }
 
@@ -90,7 +91,6 @@ mpn_float Environment::potentialField(mpn_float * q){
 //puts the negated gradient at q in answer
 void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
 	mpn_float beta = calculateBeta(q); //calculate total beta, refresh values
-
 	//Only happens when inside an obstacle
 	if(beta < 0){
 	  answer[0] = 0;
@@ -104,15 +104,20 @@ void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
 
 	for(unsigned int d(0); d<this->dim; d++){
 
-		beta0_partialTerm = -2*(q[d]-goal[d]);//compute the first term separately, initialize with the partial of beta_0
-		for(unsigned int i(0); i<obstacles.size(); i++){
-			beta0_partialTerm *= obstacleBetaValues[i];
+		beta0_partialTerm = -2*(q[d]-goal[d]);//compute the first term separately, initialize with the
+		unsigned int i;
+		for(i = 0; i<size-1; i += 2){
+		  beta0_partialTerm *= (obstacleBetaValues[i] * obstacleBetaValues[i+1]);
 		}
+		    if(i < size)
+		      {
+			beta0_partialTerm *= obstacleBetaValues[size - 1];
+		      }
 
 		betaPartial = beta0_partialTerm;//initialize with the first term
-		for(unsigned int i(0); i<obstacles.size(); i++){
+		for(i = 0; i<size; i++){
 			tmp = envBeta;
-			for(unsigned int j(0); j<obstacles.size(); j++){
+			for(unsigned int j(0); j<size; j++){
 				if(j == i)//compute the partial
 					tmp *= obstacles[i]->calculateDbeta(q,d);
 				else//multiply betas from the rest of the obstacles
