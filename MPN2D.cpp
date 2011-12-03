@@ -11,7 +11,10 @@
 #include "Unicycle.h"
 #include "Environment.h"
 #include "specialfunctions.h"
-//#include "gamma.h"
+
+#ifdef NEON
+#include <arm_neon.h>
+#endif
 
 #include <cmath>
 #include <iostream>
@@ -29,17 +32,11 @@ mpn_float *allocatePoints(int npoints){
 void cleanupPoints(mpn_float *pointArray){
   delete [] pointArray;
 }
-/*
-mpn_float inline terminalCost(Environment *e, mpn_float * path, int size)
-{
-  //Send a pointer to section of array with desired x/y
-  return e->potentialField(&path[2*(size-1)]);
-}
-*/
+
 //Size should be the actual size of path and controlPath
 //TODO: Terminal cost should have a different weight as well
 mpn_float incrementalCost(Environment * e, const MPNParams * params,mpn_float * path, mpn_float * controlPath, mpn_float dt, int size, mpn_float(*extraCost)(Environment *,mpn_float *)){
-  
+
   //compute the value of the cost function at every point
   mpn_float costFunction[size];
   //THIS CAN BE UNROLLED
@@ -54,12 +51,38 @@ mpn_float incrementalCost(Environment * e, const MPNParams * params,mpn_float * 
     }
   }
 
-  //do a cumulative integration of the cost function (wrt time) using the trapezoidal method
   mpn_float cost = costFunction[0] + costFunction[size-1];
+
+#if ( defined SINGLE_PRECISION && defined NEON)
+  
+  float32x4_t const_val = vdupq_n_f32(2); 
+  float32x4_t cum_sum = vdupq_n_f32(0);
+  float32x4_t values;
+  for(int i=1; i<(size-1)-((size-2)%4); i+=4){
+    values = vld1q_f32(&costFunction[i]);
+    cum_sum = vmlaq_f32(cum_sum,values,const_val);
+    
+  }
+  float32x2_t b = vget_high_f32(cum_sum);
+  float32x2_t c = vget_low_f32(cum_sum);
+  b = vpadd_f32(b,c);
+  cost += vget_lane_f32(b,0);
+  cost += vget_lane_f32(b,1);
+
+  /*Clean up */
+  for(int i = (size-1)-(size%4); i<size-1; i++){
+    cost += 2*costFunction[i];
+  }
+
+#else
+  //do a cumulative integration of the cost function (wrt time) using the trapezoidal method
+
   //THIS CAN BE UNROLLED
   for(int i(1); i<size-1; i++){
     cost += 2*costFunction[i];
   }
+
+#endif
   
   return (dt/2.)*cost;
 }
