@@ -37,19 +37,19 @@
   };
 */
 class Environment {//assumed to be centered at 0,0
- protected:
-  mpn_float k;//tuning parameter for potential field
-
-  unsigned int dim;
-  
+ protected:  
   std::vector<mpn_float> obstacleBetaValues;
   mpn_float envBeta;
   mpn_float radpow2;
+  mpn_float k;//tuning parameter for potential field
+
+  unsigned int dim;
  public:
+  std::vector<Obstacle *> obstacles;
   mpn_float radius;//size of the workspace
   mpn_float * goal;
-  std::vector<Obstacle *> obstacles;
-
+  
+  int size;
   Environment(mpn_float * destination,mpn_float k_in,mpn_float rad,unsigned int dim = 2);
   //Alternate constructor to use config files, pass in the environment group
   Environment(libconfig::Setting & group,unsigned int dim = 2);
