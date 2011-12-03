@@ -30,6 +30,12 @@ TODO:
   
   look up compiler flags to take full advantage of processor's features
 
+  12/3
+  pow(x,2) is slower than x*x, someone should go through and fix (or verify that
+    the compiler fixes it)
+
+  look for more pure functions, see gamma.h for example
+
 DONE:
   11/24
   added macro definition for 2D gamma that eliminates for-loop
@@ -49,9 +55,15 @@ DONE:
   were constantly being checked against in the loops.  I also tried to reduce
   the number of times we checked the end condition, but that caused a large
   performance hit.  I commented it out for now.
+  
+  implemented changing precision at compile-time
+  declared gamma as a pure function
 
   12/3
   Unrolled a loop in negated gradient and moved size to be stored within
   Environment so that it wouldn't be necessary to call obstacles.size()
   repeatedly.  I also adjusted the alignment of variables in Environment 
   to the largest to smallest paradigm.
+
+  used vectorization to unroll one loop in incrementalCost
+  vectorized gamma(a,b,i)
