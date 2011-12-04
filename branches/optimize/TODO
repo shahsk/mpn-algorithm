@@ -68,3 +68,8 @@ DONE:
   used vectorization to unroll one loop in incrementalCost
   vectorized gamma(a,b,i)
   moved a check in Environment::calculateBeta into the constructor
+
+  12/4
+  Implemented a 2d version of 2 functions in Environment and was able to
+  remove one loop in the process from negated gradient.  Look into vectorizing
+  here maybe?
