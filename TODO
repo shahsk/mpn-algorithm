@@ -67,3 +67,4 @@ DONE:
 
   used vectorization to unroll one loop in incrementalCost
   vectorized gamma(a,b,i)
+  moved a check in Environment::calculateBeta into the constructor
