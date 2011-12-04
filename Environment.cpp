@@ -82,6 +82,76 @@ Environment::~Environment() {
 	// TODO Auto-generated destructor stub
 }
 
+#ifdef DIM2
+//Calculate the value of the potential field at a given position q
+//Defined as gamma(q,q_d) / ( (gamma(q,q_d)^k + beta)^1/k )
+mpn_float Environment::potentialField(mpn_float * q){
+  mpn_float gq = gamma(q,goal,2);
+  return gq / pow( pow(gq,k) + calculateBeta(q), 1/k);
+}
+
+//puts the negated gradient at q in answer
+void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
+  mpn_float beta = calculateBeta(q); //calculate total beta, refresh values
+  //Only happens when inside an obstacle
+  if(beta < 0){
+    answer[0] = 0;
+    answer[1] = 0;
+    return;
+  }
+  
+  mpn_float gam = gamma(q,goal, 2);
+  mpn_float gamPowK = pow(gam,k);
+  mpn_float dgam,tmp,beta0_partialTerm,betaPartial;
+  
+    beta0_partialTerm = -2*(q[0]-goal[0]);//compute the first term separately, initialize with the
+    unsigned int i;
+    mpn_float temp = 1; 
+    for(i = 0; i<size-1; i += 2){
+      temp *= (obstacleBetaValues[i] * obstacleBetaValues[i+1]);
+    }
+    if(i < size)
+      {
+	temp *= obstacleBetaValues[size - 1];
+      }
+    
+    betaPartial = beta0_partialTerm*temp;//initialize with the first term
+    for(i = 0; i<size; i++){
+      tmp = envBeta;
+      for(unsigned int j(0); j<size; j++){
+	if(j == i)//compute the partial
+	  tmp *= obstacles[i]->calculateDbeta(q,0);
+	else//multiply betas from the rest of the obstacles
+	  tmp *= obstacleBetaValues[j];
+      }
+      betaPartial += tmp;
+    }
+
+    dgam = 2*(q[0] - goal[0]);
+    answer[0] = -((dgam*pow(gamPowK+beta,1/k) - (1/k)*gam*pow(gamPowK+beta,1/k - 1)*(k*pow(gam,k-1)*dgam + betaPartial))
+		  / pow(gamPowK+beta,2/k));
+  
+
+    beta0_partialTerm = -2*(q[1]-goal[1]);
+    
+    betaPartial = beta0_partialTerm*temp;//initialize with the first term
+    for(i = 0; i<size; i++){
+      tmp = envBeta;
+      for(unsigned int j(0); j<size; j++){
+	if(j == i)//compute the partial
+	  tmp *= obstacles[i]->calculateDbeta(q,1);
+	else//multiply betas from the rest of the obstacles
+	  tmp *= obstacleBetaValues[j];
+      }
+      betaPartial += tmp;
+    }
+    
+    dgam = 2*(q[1]-goal[1]);
+    answer[1] = -((dgam*pow(gamPowK+beta,1/k) - (1/k)*gam*pow(gamPowK+beta,1/k - 1)*(k*pow(gam,k-1)*dgam + betaPartial))
+		  / pow(gamPowK+beta,2/k));
+}
+#else
+    
 //Calculate the value of the potential field at a given position q
 //Defined as gamma(q,q_d) / ( (gamma(q,q_d)^k + beta)^1/k )
 mpn_float Environment::potentialField(mpn_float * q){
@@ -132,6 +202,7 @@ void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
 		  / pow(gamPowK+beta,2/k));
   }
 }
+#endif
 
 DipolarEnvironment::DipolarEnvironment(mpn_float * destination,mpn_float k_in,
 				       mpn_float rad,mpn_float ep,mpn_float goalOri):
