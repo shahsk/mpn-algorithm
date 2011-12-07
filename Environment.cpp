@@ -81,7 +81,7 @@ Environment::Environment(libconfig::Setting & group,unsigned int dim){
 Environment::~Environment() {
 	// TODO Auto-generated destructor stub
 }
-    
+
 //Calculate the value of the potential field at a given position q
 //Defined as gamma(q,q_d) / ( (gamma(q,q_d)^k + beta)^1/k )
 mpn_float Environment::potentialField(mpn_float * q){
@@ -102,22 +102,20 @@ void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
   mpn_float gam = gamma(q,goal,this->dim);
   mpn_float gamPowK = pow(gam,k);
   mpn_float dgam,tmp,beta0_partialTerm,betaPartial;
-  unsigned int i;
-  mpn_float temp = 1;
-
-   for(i = 0; i<size-1; i += 2){
-      temp*= (obstacleBetaValues[i] * obstacleBetaValues[i+1]);
-    }
-    if(i < size)
-      {
-	temp*= obstacleBetaValues[size - 1];
-      }
   
   for(unsigned int d(0); d<this->dim; d++){
     
     beta0_partialTerm = -2*(q[d]-goal[d]);//compute the first term separately, initialize with the
- 
-    betaPartial = beta0_partialTerm*temp;//initialize with the first term
+    unsigned int i;
+    for(i = 0; i<size-1; i += 2){
+      beta0_partialTerm *= (obstacleBetaValues[i] * obstacleBetaValues[i+1]);
+    }
+    if(i < size)
+      {
+	beta0_partialTerm *= obstacleBetaValues[size - 1];
+      }
+    
+    betaPartial = beta0_partialTerm;//initialize with the first term
     for(i = 0; i<size; i++){
       tmp = envBeta;
       for(unsigned int j(0); j<size; j++){
