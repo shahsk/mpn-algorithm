@@ -40,9 +40,15 @@ mpn_float gamma(mpn_float*v1,mpn_float*v2,unsigned int deprecated){
 }
 #else
 mpn_float gamma(mpn_float*v1,mpn_float*v2,unsigned int deprecated){
-  mpn_float a = (v1[0]-v2[0]);
-  mpn_float b = (v1[1]-v2[1]);
-  return a*a + b*b;
+  if(v2[0] && v2[1]){
+    mpn_float a = (v1[0]-v2[0]);
+    mpn_float b = (v1[1]-v2[1]);
+    return a*a + b*b;
+  }
+  else{
+    return v1[0]*v1[0] + v1[1]*v1[1];
+  }
+
 }
 #endif
 
