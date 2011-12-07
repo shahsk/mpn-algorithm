@@ -252,6 +252,7 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
   mpn_float tmpl = 1.0/params->nLegendrePolys;
   mpn_float gammaCost = gamma(start,e->goal,2);
   do{
+
     intgr->reset();
     //generate control inputs on +/- 1/(number of inputs)
     for(unsigned int i(0); i<params->nLegendrePolys; i++){
@@ -284,7 +285,7 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
 	  //Copy values into optimalControl
 	  for(int i(0); i<2*currSteps; i+=2){
 	    optimalControl[i] = currentControlPath[i];
-	    optimalPath[i+1] = currentControlPath[i+1];
+	    optimalControl[i+1] = currentControlPath[i+1];
 	  }
 	  //Copy parameters into optimalParams
 	  for(unsigned int i(0); i<params->nLegendrePolys; i++){
