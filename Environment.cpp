@@ -101,8 +101,51 @@ void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
   
   mpn_float gam = gamma(q,goal,this->dim);
   mpn_float gamPowK = pow(gam,k);
+
+#ifdef DIM2
+  mpn_float dgamx,dgamy,tmpx,tmpy,beta0_partialTermx,beta0_partialTermy,betaPartialx,betaPartialy;
+
+  beta0_partialTermx = -2*(q[0]-goal[0]);//compute the first term separately, initialize with the
+  beta0_partialTermy = -2*(q[1]-goal[1]);
+
+    unsigned int i;
+    for(i = 0; i<size-1; i += 2){
+      beta0_partialTermx *= (obstacleBetaValues[i] * obstacleBetaValues[i+1]);
+      beta0_partialTermy *= (obstacleBetaValues[i] * obstacleBetaValues[i+1]);
+    }
+    if(i < size){
+	beta0_partialTermx *= obstacleBetaValues[size - 1];
+	beta0_partialTermy *= obstacleBetaValues[size - 1];
+    }
+    
+    betaPartialx = beta0_partialTermx;//initialize with the first term
+    betaPartialy = beta0_partialTermy;
+    for(i = 0; i<size; i++){
+      tmpx = envBeta;
+      tmpy = envBeta;
+      for(unsigned int j(0); j<size; j++){
+	if(j == i){//compute the partial
+	  tmpx *= obstacles[i]->calculateDbeta(q,0);
+	  tmpy *= obstacles[i]->calculateDbeta(q,1);
+	}	
+	else{//multiply betas from the rest of the obstacles
+	  tmpx *= obstacleBetaValues[j];
+	  tmpy *= obstacleBetaValues[j];
+	}
+      }
+      betaPartialx += tmpx;
+      betaPartialy += tmpy;
+    }
+    
+    dgamx = 2*(q[0]-goal[0]);
+    dgamy = 2*(q[1]-goal[1]);
+    answer[0] = -((dgamx*pow(gamPowK+beta,1/k) - (1/k)*gam*pow(gamPowK+beta,1/k - 1)*(k*pow(gam,k-1)*dgamx + betaPartialx))
+		  / pow(gamPowK+beta,2/k));
+    answer[1] = -((dgamy*pow(gamPowK+beta,1/k) - (1/k)*gam*pow(gamPowK+beta,1/k - 1)*(k*pow(gam,k-1)*dgamy + betaPartialy))
+		  / pow(gamPowK+beta,2/k));
+
+#else
   mpn_float dgam,tmp,beta0_partialTerm,betaPartial;
-  
   for(unsigned int d(0); d<this->dim; d++){
     
     beta0_partialTerm = -2*(q[d]-goal[d]);//compute the first term separately, initialize with the
@@ -131,6 +174,7 @@ void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
     answer[d] = -((dgam*pow(gamPowK+beta,1/k) - (1/k)*gam*pow(gamPowK+beta,1/k - 1)*(k*pow(gam,k-1)*dgam + betaPartial))
 		  / pow(gamPowK+beta,2/k));
   }
+#endif
 }
 
 DipolarEnvironment::DipolarEnvironment(mpn_float * destination,mpn_float k_in,
