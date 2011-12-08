@@ -73,3 +73,7 @@ DONE:
   Implemented a 2d version of 2 functions in Environment and was able to
   remove one loop in the process from negated gradient.  Look into vectorizing
   here maybe?
+
+  12/7
+  Added a condition to reduce computation in gamma if the second argument is 
+  zero

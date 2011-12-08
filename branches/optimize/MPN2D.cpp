@@ -37,8 +37,59 @@ void cleanupPoints(mpn_float *pointArray){
 //TODO: Terminal cost should have a different weight as well
 mpn_float incrementalCost(Environment * e, const MPNParams * params,mpn_float * path, mpn_float * controlPath, mpn_float dt, int size, mpn_float(*extraCost)(Environment *,mpn_float *)){
 
+#if ( defined SINGLE_PRECISION && defined NEON)
+  float cost = params->costWeights[0]*gamma(&path[0],e->goal,DIM) +
+    params->costWeights[1]*gamma(&controlPath[0],DIM) +
+
+    params->costWeights[0]*gamma(&path[size-1],e->goal,DIM) +
+    params->costWeights[1]*gamma(&controlPath[size-1],DIM);
+
+  float32x4_t curr,goal,weights;
+  float32x2_t cum_sum,curr2,currcp,const_val;
+  const_val = vdup_n_f32(2);
+  cum_sum = vdup_n_f32(0);
+  weights = vdupq_n_f32(params->costWeights[0]);
+  float tmp[4] = {e->goal[0],e->goal[1],e->goal[0],e->goal[1]};
+  goal = vld1q_f32(tmp);
+
+  for(int i(1); i<size-1; i+=2){
+    curr = vld1q_f32(&path[2*i]); //This part does gamma on 2 points
+    curr = vsubq_f32(curr,goal);
+    curr = vmulq_f32(curr,curr);
+    curr = vmulq_f32(curr,weights); //Multiply by the cost weights
+    curr2 = vpadd_f32(vget_high_f32(curr),vget_low_f32(curr));
+
+    currcp = vset_lane_f32(gamma(&controlPath[2*i],DIM),currcp,0);
+    currcp = vset_lane_f32(gamma(&controlPath[2*(i+1)],DIM),currcp,1);
+
+    //cum_sum += 2*(currcp + curr2)
+    cum_sum = vmla_f32(cum_sum,currcp,const_val);
+    cum_sum = vmla_f32(cum_sum,curr2,const_val); 
+  }
+  cost += vget_lane_f32(cum_sum,0);
+  cost += vget_lane_f32(cum_sum,1);
+
+  if( size&1 ){ //Cleanup
+    cost += params->costWeights[0]*gamma(&path[size-2],e->goal,DIM) +
+      params->costWeights[1]*gamma(&controlPath[size-2],DIM);
+  } 
+
+  if(extraCost != noExtraCost){
+    for(int i(0); i<size; i++){
+      if( i == 0 || i == size-1){
+	cost += params->costWeights[2]*extraCost(e,&path[2*i]);
+      }
+      else{
+	cost += 2*params->costWeights[2]*extraCost(e,&path[2*i]);
+      }
+    }
+  }
+  
+
+#else
   //compute the value of the cost function at every point
   mpn_float costFunction[size];
+
   //THIS CAN BE UNROLLED
   for(int i(0); i<size; i++){
     costFunction[i] = params->costWeights[0]*gamma(&path[2*i],e->goal,DIM) +
@@ -52,29 +103,6 @@ mpn_float incrementalCost(Environment * e, const MPNParams * params,mpn_float * 
   }
 
   mpn_float cost = costFunction[0] + costFunction[size-1];
-
-#if ( defined SINGLE_PRECISION && defined NEON)
-  
-  float32x4_t const_val = vdupq_n_f32(2); 
-  float32x4_t cum_sum = vdupq_n_f32(0);
-  float32x4_t values;
-  for(int i=1; i<(size-1)-((size-2)%4); i+=4){
-    values = vld1q_f32(&costFunction[i]);
-    cum_sum = vmlaq_f32(cum_sum,values,const_val);
-    
-  }
-  float32x2_t b = vget_high_f32(cum_sum);
-  float32x2_t c = vget_low_f32(cum_sum);
-  b = vpadd_f32(b,c);
-  cost += vget_lane_f32(b,0);
-  cost += vget_lane_f32(b,1);
-
-  /*Clean up */
-  for(int i = (size-1)-(size%4); i<size-1; i++){
-    cost += 2*costFunction[i];
-  }
-
-#else
   //do a cumulative integration of the cost function (wrt time) using the trapezoidal method
 
   //THIS CAN BE UNROLLED
@@ -308,12 +336,6 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
   
   bestPath = optimalPath;
   bestControl = optimalControl;
-  for(int i(2*(bestSteps+1)); i<2*steps; i+=2){
-    bestPath[i] = 0;
-    bestPath[i+1] = 0;
-    bestControl[i] = 0;
-    bestControl[i+1] = 0;
-  }
   steps = bestSteps;
 
   bool arrived = bestCHI < controlHorizonIndex;

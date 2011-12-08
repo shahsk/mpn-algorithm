@@ -15,7 +15,7 @@
 #define STARTX 0 //Starting point is [STARTX*radius,STARTY*radius]
 #define STARTY .9
 
-#define NTRIALS 100
+#define NTRIALS 1
 
 int main(){
   Environment * env;
