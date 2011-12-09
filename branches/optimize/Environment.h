@@ -45,7 +45,6 @@ class Environment {//assumed to be centered at 0,0
   mpn_float k;//tuning parameter for potential field
 
   unsigned int dim;
-  bool origin_goal;
  public:
   mpn_float radius;//size of the workspace
   mpn_float * goal;
