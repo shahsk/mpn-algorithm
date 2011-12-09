@@ -12,12 +12,14 @@
 #include "Environment.h"
 #include "specialfunctions.h"
 
+
 #ifdef NEON
 #include <arm_neon.h>
 #endif
 
 #include <cmath>
 #include <iostream>
+#include <string.h>
 
 #define MAX_TRIES 10000
 #define terminalCost(e, path, size) ( e->potentialField(&path[2*(size-1)]) )
@@ -252,15 +254,19 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
 
   //initialize with nominal values
   mpn_float * optimalPath = new mpn_float[2*steps];
+  memcpy(optimalPath,nominal,sizeof(nominal));
+  /*
   for(int i(0); i<2*steps; i+=2){
     optimalPath[i] = nominal[i];
     optimalPath[i+1] = nominal[i+1];
-  }
+    }*/
   mpn_float * optimalControl = new mpn_float[2*steps];
+  memcpy(optimalControl,nominalControl,sizeof(nominalControl));
+  /*
   for(int i(0); i<2*steps; i+=2){
     optimalControl[i] = nominalControl[i];
     optimalControl[i+1] = nominalControl[i+1];
-  }
+    }*/
 
   mpn_float incrCost = incrementalCost(e,params,nominal,nominalControl,
 				    intgr->getDt(),steps);
@@ -306,19 +312,26 @@ bool generateBestPath(Environment * e, MPNParams * params, Integrator *& intgr, 
 	  bestCHI = currCHI;
 	  optimalCost = currentCost;
 	  //Copy values into optimalPath
+	  memcpy(optimalPath,currentPath,sizeof(mpn_float)*bestSteps);
+	  /*
 	  for(int i(0); i<2*currSteps; i+=2){
 	    optimalPath[i] = currentPath[i];
 	    optimalPath[i+1] = currentPath[i+1];
-	  }
+	    }*/
 	  //Copy values into optimalControl
+	  memcpy(optimalControl,currentControlPath,sizeof(mpn_float)*bestSteps);
+	  /*
 	  for(int i(0); i<2*currSteps; i+=2){
 	    optimalControl[i] = currentControlPath[i];
 	    optimalControl[i+1] = currentControlPath[i+1];
-	  }
+	    }*/
+
 	  //Copy parameters into optimalParams
+	  memcpy(optimalParams,params->controlParameters,sizeof(optimalParams));
+	  /*
 	  for(unsigned int i(0); i<params->nLegendrePolys; i++){
 	    optimalParams[i] = params->controlParameters[i];
-	  }
+	    }*/
 	  //Copy Integrator end state into optimalEndIntegrator
 	  //optimalEndIntegrator = *intgr;
 	  delete optimalEndIntegrator;
