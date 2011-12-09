@@ -132,7 +132,7 @@ int nominalPath(Environment * e,Integrator * intgr,mpn_float* controlPath, mpn_f
       NOTE: This doesn't have to happen every point, maybe every 10
      */
     if(params != NULL){
-      if(gamma(goal,current,DIM) < tol){
+      if(gamma(current,goal,DIM) < tol){
 	if(tmpPtr == NULL){
 	  tmpPtr = intgr->copy();
 	  tmpPtr->saveState();
