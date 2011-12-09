@@ -26,10 +26,12 @@ mpn_float Environment::calculateBeta0(mpn_float * q){
 //Defined as (r_0^2 - ||q-q_0||^2 ) * (product of all obstacle beta values)
 mpn_float Environment::calculateBeta(mpn_float * q){
   mpn_float beta = calculateBeta0(q);
+  int tmp;
   for(unsigned int i(0); i<size; i++){
+    tmp = 3*i;
     //obstacleBetaValues[i] = obstacles[i]->calculateBeta(q);
-    obstacleBetaValues[i] = gamma(q,obstacles[i]->pos,this->dim)-
-      obstacles[i]->radius*obstacles[i]->radius;
+    obstacleBetaValues[i] = gamma(q,&objPosRadius[tmp],this->dim)-
+      objPosRadius[tmp+2]*objPosRadius[tmp+2];
     beta *= obstacleBetaValues[i];
   }
   return beta;
@@ -61,7 +63,7 @@ Environment::Environment(libconfig::Setting & group,unsigned int dim){
     tmp = group["destination"][i];
     this->goal[i] = tmp;
   }
-  if(group.exists("obstacles")){
+  /* if(group.exists("obstacles")){
     mpn_float tmpPos[this->dim],tmpR;
     for(unsigned int i(0); i<group["obstacles"].getLength(); i++){
       for(unsigned int j(0); j<this->dim; j++){
@@ -73,8 +75,23 @@ Environment::Environment(libconfig::Setting & group,unsigned int dim){
       this->obstacles.push_back(new Obstacle(tmpPos,tmpR));
 
     }
+    }*/
+  if(group.exists("obstacles")){
+    mpn_float tmpPos[this->dim],tmpR;
+    this->size = group["obstacles"].getLength();
+    objPosRadius = new mpn_float[3*this->size];
+    for(unsigned int i(0); i<this->size; i++){
+      for(unsigned int j(0); j<this->dim; j++){
+	tmp = group["obstacles"][i]["position"][j];
+	tmpPos[j] = tmp;
+      }
+      tmp = group["obstacles"][i]["radius"];
+      tmpR = tmp;
+      objPosRadius[3*i] = tmpPos[0];
+      objPosRadius[3*i+1] = tmpPos[1];
+      objPosRadius[3*i+2] = tmpR;
+    }
   }
-  this->size = obstacles.size();
   this->obstacleBetaValues.resize(this->size);
 }
 
@@ -125,8 +142,8 @@ void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
       tmpy = envBeta;
       for(unsigned int j(0); j<size; j++){
 	if(j == i){//compute the partial
-	  tmpx *= obstacles[i]->calculateDbeta(q,0);
-	  tmpy *= obstacles[i]->calculateDbeta(q,1);
+	  tmpx *= 2*(q[0]-objPosRadius[j*3]);
+	  tmpy *= 2*(q[1]-objPosRadius[(j*3) +1]);
 	}	
 	else{//multiply betas from the rest of the obstacles
 	  tmpx *= obstacleBetaValues[j];
@@ -163,7 +180,7 @@ void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
       tmp = envBeta;
       for(unsigned int j(0); j<size; j++){
 	if(j == i)//compute the partial
-	  tmp *= obstacles[i]->calculateDbeta(q,d);
+	  tmp *= 2*(q[d]-ObjPosRadius[3*j+d]);
 	else//multiply betas from the rest of the obstacles
 	  tmp *= obstacleBetaValues[j];
       }
@@ -200,7 +217,7 @@ DipolarEnvironment::DipolarEnvironment(libconfig::Setting & group):
 }
 
 void DipolarEnvironment::negatedGradient(mpn_float * q,mpn_float * answer){
-	mpn_float beta = calculateBeta(q); //calculate total beta, refresh values
+  /*mpn_float beta = calculateBeta(q); //calculate total beta, refresh values
 
 	//Only happens when inside an obstacle
 	if(beta < 0){
@@ -245,12 +262,12 @@ void DipolarEnvironment::negatedGradient(mpn_float * q,mpn_float * answer){
 			       (betaPartial*hval + beta*hPartial)))
 			       / pow(gamPowK+beta*hval,2/k));
 	}
-
+  */
 }
 
 mpn_float DipolarEnvironment::potentialField(mpn_float * q){
   mpn_float gq = gamma(q,goal,this->dim);
   mpn_float eta = pow((q[0] - goal[0])*cosGoalOri + 
 		   (q[1] - goal[1])*cosGoalOri,2);
-  return gq / pow( pow(gq,k) + ((epsilon + eta)*calculateBeta(q)), 1/k);
+		   return gq / pow( pow(gq,k) + ((epsilon + eta)*calculateBeta(q)), 1/k);
 }
