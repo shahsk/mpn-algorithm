@@ -15,7 +15,7 @@
 #define STARTX 0 //Starting point is [STARTX*radius,STARTY*radius]
 #define STARTY .9
 
-#define NTRIALS 1
+#define NTRIALS 100
 
 int main(){
   Environment * env;
@@ -59,10 +59,10 @@ int main(){
   
   printf("Average Cycles: %f\n", average);
 
-  /*
+
   for(int i(0); i<2*steps; i+=2 ){
     printf("Point %i: %f,%f\n",i,bestPath[i],bestPath[i+1]);
   }
-  */
+
 
 }
