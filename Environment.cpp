@@ -130,7 +130,7 @@ void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
       beta0_partialTermx *= (obstacleBetaValues[i] * obstacleBetaValues[i+1]);
       beta0_partialTermy *= (obstacleBetaValues[i] * obstacleBetaValues[i+1]);
     }
-    if( size&1 ){
+    if(i < size){
 	beta0_partialTermx *= obstacleBetaValues[size - 1];
 	beta0_partialTermy *= obstacleBetaValues[size - 1];
     }
