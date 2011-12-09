@@ -59,10 +59,10 @@ int main(){
   
   printf("Average Cycles: %f\n", average);
 
-
+  /*
   for(int i(0); i<2*steps; i+=2 ){
     printf("Point %i: %f,%f\n",i,bestPath[i],bestPath[i+1]);
-  }
+    }*/
 
 
 }
