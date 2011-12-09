@@ -126,13 +126,9 @@ void Environment::negatedGradient(mpn_float * q,mpn_float * answer){
   beta0_partialTermy = -2*(q[1]-goal[1]);
 
     unsigned int i;
-    for(i = 0; i<size-1; i += 2){
-      beta0_partialTermx *= (obstacleBetaValues[i] * obstacleBetaValues[i+1]);
-      beta0_partialTermy *= (obstacleBetaValues[i] * obstacleBetaValues[i+1]);
-    }
-    if(i < size){
-	beta0_partialTermx *= obstacleBetaValues[size - 1];
-	beta0_partialTermy *= obstacleBetaValues[size - 1];
+    for(i = 0; i<size; i ++){
+      beta0_partialTermx *= obstacleBetaValues[i];
+      beta0_partialTermy *= obstacleBetaValues[i];
     }
     
     betaPartialx = beta0_partialTermx;//initialize with the first term
