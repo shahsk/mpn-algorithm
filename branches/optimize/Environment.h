@@ -39,13 +39,13 @@
 class Environment {//assumed to be centered at 0,0
  protected:  
   std::vector<mpn_float> obstacleBetaValues;
+  mpn_float * objPosRadius; //Obj1:x,y,radius, Obj2:x,y, radius,...
   mpn_float envBeta;
   mpn_float radpow2;
   mpn_float k;//tuning parameter for potential field
 
   unsigned int dim;
  public:
-  std::vector<Obstacle *> obstacles;
   mpn_float radius;//size of the workspace
   mpn_float * goal;
   
