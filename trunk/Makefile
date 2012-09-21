@@ -1,6 +1,6 @@
 ALGLIB_USED = alglib/alglibinternal.o alglib/ap.o alglib/specialfunctions.o alglib/interpolation.o alglib/alglibmisc.o alglib/optimization.o alglib/linalg.o alglib/dataanalysis.o alglib/integration.o alglib/solvers.o alglib/statistics.o
 
-OBJS = gamma.o saturate.o Environment.o Obstacle.o MPN2D.o Integrator.o Unicycle.o Build.o 
+OBJS = gamma.o saturate.o Environment.o Obstacle.o MPN2D.o Integrator.o Unicycle.o Build.o PlayerRobot.o
 
 MATLAB_PATH = matlabTests/
 MATLAB_OBJS = bestPath.a getObPos.a negGradient.a samplePath.a
@@ -33,6 +33,9 @@ alglib/%.o: alglib/%.cpp
 	g++ $< -o $@ -c -fpic -O2
 
 flat_control.o: flat_control.cpp
+	g++ `pkg-config --cflags playerc++` $< -o $@ `pkg-config --libs playerc++` -c
+
+PlayerRobot.o: PlayerRobot.cpp
 	g++ `pkg-config --cflags playerc++` $< -o $@ `pkg-config --libs playerc++` -c
 
 %.o: %.cpp

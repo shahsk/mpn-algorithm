@@ -5,26 +5,27 @@
 #include "Obstacle.h"
 #include "gamma.h"
 #include "saturate.h"
+#include "flat_control.h"
+
+#include "Robot.h"
+#include "PlayerRobot.h"
+
 #include <math.h>
-#include <iostream>
 #include <libplayerc++/playerc++.h>
 #include <iostream>
 #include <time.h>
 #include <libconfig.h++>
 #include <string>
-
 #include <boost/thread.hpp>
-
-#include "flat_control.h"
 
 #define CONFIG_FILE "lab.cfg"
 
-#define ROBOTIP "192.168.1.113"
-#define ROBOTPORT 6666
+#define ROBOTIP "localhost"
+#define ROBOTPORT 6665
 #define SOURCEIP "localhost"
 #define SOURCEPORT 6665
 
-#define USE_ROBOT_POS false
+#define USE_ROBOT_POS true
 
 #define PRECISION .01
 
@@ -61,19 +62,24 @@ int main(){
     sourceP = new Position2dProxy(sourceC,0);
   }
 
-  flat_control robot(sourceC,sourceP,env->goal,params->tolerance,
-		     sinkC,sinkP,VMAX,OMEGAMAX,VMIN,OMEGAMIN);
+  Robot * interface = new PlayerRobot(sourceC,sourceP,sinkC,sinkP); 
+  //PlayerRobot * interface = new PlayerRobot(sourceC,sourceP,sinkC,sinkP);
+
+  flat_control robot(interface, env->goal,params->tolerance,
+	       VMAX,OMEGAMAX,VMIN,OMEGAMIN);
+  //flat_control robot(sourceC,sourceP,env->goal,params->tolerance,
+  //		     sinkC,sinkP,VMAX,OMEGAMAX,VMIN,OMEGAMIN);
 
   int steps,CHI,nextSteps,nextCHI; //CHI = Control Horizon Index
   double start[2],dt = PRECISION;//,time=params->controlHorizon;
   double time = params->controlHorizon;
   double ** bestPath,**bestControl,**nextPath,**nextControl;
 
-  sourceC->Read();
-  start[0] = sourceP->GetXPos();
-  start[1] = sourceP->GetYPos();
+  interface->refresh();
+  start[0] = interface->getX();
+  start[1] = interface->getY();
 
-  intgr = new Unicycle(dt,sourceP->GetYaw(),VMAX,OMEGAMAX,VMIN,OMEGAMIN);
+  intgr = new Unicycle(dt,interface->getYaw(),VMAX,OMEGAMAX,VMIN,OMEGAMIN);
   
   //Generate an initial path
   bool done = generateBestPath(env,params,intgr,bestPath,bestControl,
@@ -107,14 +113,17 @@ int main(){
 
     //Wait for robot to finish
     driveThread.join();
-    realPos[0] = sourceP->GetXPos();
-    realPos[1] = sourceP->GetYPos();
+    interface->refresh();
+    realPos[0] = interface->getX();
+    realPos[1] = interface->getY();
 
   }  
 
   //Drive the final stretch
   boost::thread driveThread(robot);
   driveThread.join();
-  sinkP->SetSpeed(0,0);
+  interface->setV(0);
+  interface->setW(0);
+  interface->send();
   sleep(3);
 }

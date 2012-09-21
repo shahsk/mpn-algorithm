@@ -17,26 +17,12 @@
 using namespace alglib;
 using namespace PlayerCc;
 
-flat_control::flat_control(PlayerClient * sourceClient,
-			   Position2dProxy * sourcePos,
-			   double * endGoal,double tol,
-			   PlayerClient * sinkClient,
-			   Position2dProxy * sinkPos,
-			   double vmax,double omegamax,double vmin,
-			   double omegamin){
 
-  this->sourceClient = sourceClient;
-  this->sourcePos = sourcePos;
-
-  if(sinkClient == NULL)
-    this->sinkClient = this->sourceClient;
-  else
-    this->sinkClient = sinkClient;
-  if(sinkPos == NULL)
-    this->sinkPos = this->sourcePos;
-  else
-    this->sinkPos = sinkPos;
-
+  //If position reading is done on a different interface from position commands
+flat_control::flat_control(Robot * robot, double * endGoal,double tol,
+			   double vmax,double omegamax,
+			   double vmin,double omegamin){
+  this->robot = robot;
 
   this->endGoal[0] = endGoal[0];
   this->endGoal[1] = endGoal[1];
@@ -46,7 +32,6 @@ flat_control::flat_control(PlayerClient * sourceClient,
   this->wmax = omegamax;
   this->vmin = vmin;
   this->wmin = omegamin;
-
 
   /*
   this->xCurrent = new barycentricinterpolant();
@@ -60,10 +45,10 @@ flat_control::flat_control(PlayerClient * sourceClient,
   this->xNext = new spline1dinterpolant();
   this->yNext = new spline1dinterpolant();
 
-  this->sourceClient->Read();
-  this->pose[0] = this->sourcePos->GetXPos();
-  this->pose[1] = this->sourcePos->GetYPos();
-  this->pose[2] = this->sourcePos->GetYaw();
+  this->robot->refresh();
+  this->pose[0] = this->robot->getX();
+  this->pose[1] = this->robot->getY();
+  this->pose[2] = this->robot->getYaw();
 
   this->first = true;
 }
@@ -161,17 +146,19 @@ void flat_control::operator()(){
     std::cout << "," << this->currTime-this->startTime << std::endl;    
     //std::cout << "desired x: " << desiredX[0] << " desired y: " << desiredX[1] << std::endl;
     
-    this->sourceClient->Read();
-    this->pose[0] = this->sourcePos->GetXPos();
-    this->pose[1] = this->sourcePos->GetYPos();
-    this->pose[2] = this->sourcePos->GetYaw();
+    this->robot->refresh();
+    this->pose[0] = this->robot->getX();
+    this->pose[1] = this->robot->getY();
+    this->pose[2] = this->robot->getYaw();
     //std::cout << pose[0] << "," << pose[1] << ";";
     //if(pose[2] <= 0)
     //pose[2] += 2*M_PI;
     //std::cout << pose[2] << std::endl;
     
     if(gamma(this->pose,this->endGoal,2) < this->tol*this->tol){
-      this->sinkPos->SetSpeed(0,0);
+      this->robot->setV(0);
+      this->robot->setW(0);
+      this->robot->send();
       break;
     }
     
@@ -182,8 +169,8 @@ void flat_control::operator()(){
       this->currVel[1] = this->desiredV[1];
     }
     else{
-      this->currVel[0] = this->sourcePos->GetXSpeed()*cos(this->pose[2]);
-      this->currVel[1] = this->sourcePos->GetXSpeed()*sin(this->pose[2]);
+      this->currVel[0] = this->robot->getV()*cos(this->pose[2]);
+      this->currVel[1] = this->robot->getV()*sin(this->pose[2]);
       //currVel[0] = prevVel*cos(pose[2])*((rand()-rand())
       //				   /static_cast<double>(RAND_MAX));
       //currVel[1] = prevVel*sin(pose[2])*((rand()-rand())
@@ -214,7 +201,9 @@ void flat_control::operator()(){
     this->v = this->v > 0 ? this->v : 0;
     saturate(&this->omega,this->wmax,this->wmin);
     
-    this->sinkPos->SetSpeed(this->v,this->omega);
+    this->robot->setV(this->v);
+    this->robot->setW(this->omega);
+    this->robot->send();
     
     //std::cout << "vel: " << v << " omega: " << omega << std::endl;    
 
