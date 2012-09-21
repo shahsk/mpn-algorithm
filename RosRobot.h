@@ -7,7 +7,6 @@ class RosRobot : public Robot{
  private:
   //Ros::publisher
   //Ros::subscriber
-  // Sample changes by Shridhar
   void send(); //Send the current v/w command
   void refresh();//Update the data in the robot
 
